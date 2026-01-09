@@ -50,27 +50,36 @@ That's it! No cloud credentials, API keys, or additional setup needed.
 
 ## 🚀 Installation
 
-### Option 1: Install from PyPI (when published)
+### Option 1: Install with pipx (Recommended)
 
 ```bash
-pip install infra-guide
+# Install pipx if you don't have it
+sudo apt update
+sudo apt install pipx
+
+# Install infra-guide
+pipx install git+https://github.com/iamtejas23/infra-guide.git
+
+# Run the tool
+infra-guide
 ```
 
 ### Option 2: Install from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/infra-guide.git
+git clone https://github.com/iamtejas23/infra-guide.git
 cd infra-guide
 
-# Install in editable mode (for development)
-pip install -e .
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-# Or install normally
+# Install the package
 pip install .
 ```
 
-### Option 3: Install with pipx (recommended for CLI tools)
+### Option 3: Install from PyPI (when published)
 
 ```bash
 pipx install infra-guide
@@ -137,7 +146,7 @@ infra-guide
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/infra-guide.git
+git clone https://github.com/iamtejas23/infra-guide.git
 cd infra-guide
 
 # Create virtual environment
@@ -224,9 +233,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📫 **Issues**: [GitHub Issues](https://github.com/yourusername/infra-guide/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/infra-guide/discussions)
-- 📖 **Documentation**: [GitHub Wiki](https://github.com/yourusername/infra-guide/wiki)
+- 📫 **Issues**: [GitHub Issues](https://github.com/iamtejas23/infra-guide/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/iamtejas23/infra-guide/discussions)
+- 📖 **Documentation**: [GitHub Wiki](https://github.com/iamtejas23/infra-guide/wiki)
 
 ## ⭐ Star History
 
