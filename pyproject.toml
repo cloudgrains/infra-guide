@@ -43,10 +43,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/infra-guide"
-Documentation = "https://github.com/yourusername/infra-guide#readme"
-Repository = "https://github.com/yourusername/infra-guide"
-"Bug Tracker" = "https://github.com/yourusername/infra-guide/issues"
+Homepage = "https://github.com/iamtejas23/infra-guide"
+Documentation = "https://github.com/iamtejas23/infra-guide#readme"
+Repository = "https://github.com/iamtejas23/infra-guide"
+"Bug Tracker" = "https://github.com/iamtejas23/infra-guide/issues"
 
 [project.scripts]
 infra-guide = "infra_guide.cli:main"
