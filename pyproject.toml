@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "infra-guide"
+version = "0.1.0"
+description = "An interactive TUI for Terraform and OpenTofu beginners"
+readme = "README.md"
+authors = [
+    { name = "Infrastructure Guide Team", email = "info@infra-guide.dev" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
+keywords = ["terraform", "opentofu", "infrastructure", "iac", "devops", "cli", "tui"]
+
+dependencies = [
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/infra-guide"
+Documentation = "https://github.com/yourusername/infra-guide#readme"
+Repository = "https://github.com/yourusername/infra-guide"
+"Bug Tracker" = "https://github.com/yourusername/infra-guide/issues"
+
+[project.scripts]
+infra-guide = "infra_guide.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["infra_guide*"]
+exclude = ["tests*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
