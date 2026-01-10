@@ -73,7 +73,12 @@ class InfraGuideUI:
             ("2", "plan", "📋 Show changes required by current configuration"),
             ("3", "apply", "✅ Create or update infrastructure"),
             ("4", "destroy", "💥 Destroy previously-created infrastructure"),
-            ("5", "exit", "🚪 Exit infra-guide"),
+            ("5", "validate", "✓ Run pre-flight validations"),
+            ("6", "drift", "🔍 Detect infrastructure drift"),
+            ("7", "state", "📦 Explore state file"),
+            ("8", "workspace", "📁 Manage workspaces"),
+            ("9", "cicd", "🚀 CI/CD pipeline mode"),
+            ("0", "exit", "🚪 Exit infra-guide"),
         ]
 
         for option, command, description in menu_items:
@@ -81,7 +86,7 @@ class InfraGuideUI:
 
         menu_panel = Panel(
             table,
-            title="[bold white]Main Menu[/bold white]",
+            title="[bold white]Main Menu - Enhanced Edition[/bold white]",
             border_style="blue",
             padding=(1, 2)
         )
@@ -91,8 +96,8 @@ class InfraGuideUI:
 
         choice = Prompt.ask(
             "[bold cyan]Select an option[/bold cyan]",
-            choices=["1", "2", "3", "4", "5"],
-            default="5"
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+            default="0"
         )
         return choice
 

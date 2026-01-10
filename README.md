@@ -2,18 +2,28 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
 
-**infra-guide** is an interactive, colorful terminal UI (TUI) tool designed to help Terraform and OpenTofu beginners learn and execute infrastructure-as-code commands with confidence. It provides helpful guides, best practices, and warnings before executing any command.
+**infra-guide** is a production-grade, interactive terminal UI (TUI) tool for Terraform and OpenTofu that combines beginner-friendly guidance with enterprise-level features. Learn infrastructure-as-code while using professional tools like drift detection, policy validation, and CI/CD integration.
 
 ## ✨ Features
 
+### Core Features
 - 🎯 **Auto-Detection**: Automatically detects whether you have Terraform or OpenTofu installed
 - 📚 **Interactive Guides**: Detailed explanations for each command before execution
 - 🎨 **Beautiful TUI**: Rich, colorful interface with a modern dark theme
 - ⚡ **No Setup Required**: No cloud credentials, no network calls, no telemetry
 - 🛡️ **Safety First**: Confirmation prompts and warnings before destructive operations
 - 📖 **Beginner-Friendly**: Best practices and common flags explained clearly
-- 🔄 **Command Support**: init, plan, apply, destroy with detailed guidance
+
+### Enterprise Features (v0.2.0) 🆕
+- 🔍 **Drift Detection**: Automatically detect when infrastructure has drifted from state
+- ✅ **Pre-Flight Validation**: Comprehensive checks before executing commands
+- 📦 **State Explorer**: Interactive browser for exploring state files with tree view
+- 📁 **Workspace Manager**: Easy management of multiple environments
+- 🚀 **CI/CD Mode**: Non-interactive pipeline mode for automation
+- 📊 **Resource Visualization**: View resources by type with detailed statistics
+- 🔄 **Smart Validation**: Syntax checking, format validation, and configuration analysis
 
 ## 🎬 Demo
 
@@ -21,13 +31,18 @@
 🚀 infra-guide - Interactive Infrastructure Guide
 📦 Using: terraform (v1.6.0)
 
-┌─────────────────────── Main Menu ───────────────────────┐
-│ Option  Command      Description                         │
-│ 1       init         🔧 Initialize a working directory   │
-│ 2       plan         📋 Show changes required            │
-│ 3       apply        ✅ Create or update infrastructure  │
-│ 4       destroy      💥 Destroy infrastructure           │
-│ 5       exit         🚪 Exit infra-guide                 │
+┌──────────────────── Main Menu - Enhanced Edition ───────────────────┐
+│ Option  Command      Description                                     │
+│ 1       init         🔧 Initialize a working directory               │
+│ 2       plan         📋 Show changes required                        │
+│ 3       apply        ✅ Create or update infrastructure              │
+│ 4       destroy      💥 Destroy infrastructure                       │
+│ 5       validate     ✓ Run pre-flight validations                   │
+│ 6       drift        🔍 Detect infrastructure drift                  │
+│ 7       state        📦 Explore state file                           │
+│ 8       workspace    📁 Manage workspaces                            │
+│ 9       cicd         🚀 CI/CD pipeline mode                          │
+│ 0       exit         🚪 Exit infra-guide                             │
 └─────────────────────────────────────────────────────────┘
 
 Select an option [1/2/3/4/5] (5):
@@ -102,37 +117,74 @@ infra-guide
 
 ### Example Workflow
 
-1. **Initialize your project**
-   ```
-   Select option 1 (init)
-   Review the guide
-   Confirm execution
-   ```
+**Basic Workflow:**
+1. **Initialize your project** - Select option 1 (init)
+2. **Validate configuration** - Select option 5 (validate) for pre-flight checks
+3. **Preview changes** - Select option 2 (plan)
+4. **Apply changes** - Select option 3 (apply)
 
-2. **Preview changes**
-   ```
-   Select option 2 (plan)
-   Review the guide and understand what will change
-   Confirm execution
-   ```
-
-3. **Apply changes**
-   ```
-   Select option 3 (apply)
-   Read warnings carefully
-   Confirm execution
-   ```
+**Advanced Workflow:**
+1. **Check for drift** - Select option 6 (drift) to detect changes outside Terraform
+2. **Explore state** - Select option 7 (state) to view current infrastructure
+3. **Manage environments** - Select option 8 (workspace) to switch between dev/staging/prod
+4. **Run CI/CD pipeline** - Select option 9 (cicd) for automated validation
 
 ## 🎯 Supported Commands
 
-| Command | Description | Risk Level |
-|---------|-------------|------------|
-| `init` | Initialize working directory | 🟢 Low |
-| `plan` | Preview infrastructure changes | 🟢 Low |
-| `apply` | Create/update infrastructure | 🟡 Medium |
-| `destroy` | Delete all infrastructure | 🔴 High |
+| Command | Description | Risk Level | New in v0.2.0 |
+|---------|-------------|------------|---------------|
+| `init` | Initialize working directory | 🟢 Low | |
+| `plan` | Preview infrastructure changes | 🟢 Low | |
+| `apply` | Create/update infrastructure | 🟡 Medium | |
+| `destroy` | Delete all infrastructure | 🔴 High | |
+| `validate` | Run pre-flight checks | 🟢 Low | ✅ |
+| `drift` | Detect infrastructure drift | 🟢 Low | ✅ |
+| `state` | Explore state file | 🟢 Low | ✅ |
+| `workspace` | Manage workspaces | 🟡 Medium | ✅ |
+| `cicd` | Run CI/CD pipeline | 🟡 Medium | ✅ |
 
-## 🔒 Security & Privacy
+## � Feature Deep Dive
+
+### 🔍 Drift Detection
+Automatically detects when your actual infrastructure has diverged from the state file. This happens when changes are made outside of Terraform/OpenTofu (manual changes, other tools, etc.).
+
+```bash
+# In infra-guide, select option 6
+# Shows which resources have drifted and what changed
+```
+
+### ✅ Pre-Flight Validation
+Runs comprehensive checks before you execute commands:
+- Configuration file existence
+- Initialization status
+- Syntax validation
+- Code formatting
+- Backend configuration
+- Provider version locks
+- Required variables
+
+### 📦 State Explorer
+Interactive browser for your state file:
+- **Overview**: Total resources and types
+- **Resource List**: All resources with addresses
+- **Tree View**: Hierarchical visualization by resource type
+
+### 📁 Workspace Manager
+Easily manage multiple environments:
+- List all workspaces
+- Switch between workspaces
+- Create new workspaces
+- Delete unused workspaces
+- Visual indication of current workspace
+
+### 🚀 CI/CD Pipeline Mode
+Non-interactive mode perfect for automation:
+- Runs init → validate → plan automatically
+- Uses detailed exit codes
+- No user prompts
+- Designed for continuous integration
+
+## �🔒 Security & Privacy
 
 - **No Telemetry**: We don't collect any data
 - **No Network Calls**: Works completely offline
@@ -198,16 +250,29 @@ infra-guide/
 
 ## 🗺️ Roadmap
 
-- [ ] Add support for workspace management
-- [ ] Include `terraform validate` and `terraform fmt` commands
-- [ ] Add interactive flag selection for commands
-- [ ] Support for custom command templates
+### Completed ✅
+- [x] Core IaC commands (init, plan, apply, destroy)
+- [x] Drift detection
+- [x] Pre-flight validations
+- [x] State explorer with tree visualization
+- [x] Workspace management
+- [x] CI/CD pipeline mode
+- [x] Comprehensive error handling
+
+### Coming Soon
+- [ ] Policy-as-code integration (OPA, Sentinel)
+- [ ] Cost estimation before apply
+- [ ] Graph visualization of resource dependencies
+- [ ] Plan diff with syntax highlighting
+- [ ] Custom command templates
 - [ ] Configuration file for user preferences
 - [ ] Color theme customization
 - [ ] Command history and favorites
-- [ ] Export command explanations to markdown
+- [ ] Export reports to markdown/PDF
 - [ ] Integration with popular CI/CD platforms
 - [ ] Multi-language support
+- [ ] Cloud provider-specific guidance
+- [ ] Terraform/OpenTofu module browser
 
 ## 🤝 Contributing
 

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "infra-guide"
-version = "0.1.0"
-description = "An interactive TUI for Terraform and OpenTofu beginners"
+version = "0.2.0"
+description = "An interactive TUI for Terraform and OpenTofu beginners with enterprise-grade features"
 readme = "README.md"
 authors = [
     { name = "Infrastructure Guide Team", email = "info@infra-guide.dev" }
