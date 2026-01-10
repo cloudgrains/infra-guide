@@ -251,7 +251,7 @@ def handle_cicd(ui: InfraGuideUI, cicd_runner: CICDRunner):
     
     ui.console.print("\n[bold yellow]⚠️  CI/CD Pipeline Mode[/bold yellow]\n")
     ui.console.print("[white]This mode runs a complete validation and planning pipeline.")
-    ui.console.print("Suitable for continuous integration environments.\n[/white]")
+    ui.console.print("Suitable for continuous integration environments.[/white]\n")
     
     if Confirm.ask("[cyan]Run CI/CD pipeline?[/cyan]", default=False):
         ui.console.print()
