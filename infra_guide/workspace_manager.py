@@ -3,7 +3,7 @@ Workspace manager - manages Terraform/OpenTofu workspaces.
 """
 
 import subprocess
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
