@@ -13,15 +13,18 @@ authors = [
 maintainers = [
     { name = "Infrastructure Guide Team", email = "info@infra-guide.dev" }
 ]
-license = { text = "MIT" }
+# Use a simple SPDX expression string for `project.license` to satisfy
+# modern packaging tooling (setuptools/pyproject validation).
+license = "MIT"
 requires-python = ">=3.8"
-license-files = { paths = ["LICENSE"] }
+# `license-files` should be an array of paths per PEP/validation
+license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
+    # License classifiers are superseded by SPDX license expressions
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Operating System :: POSIX",
