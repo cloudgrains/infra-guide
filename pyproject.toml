@@ -40,7 +40,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: System :: Systems Administration",
-    "Topic :: System :: Infrastructure",
     "Topic :: Utilities",
 ]
 keywords = ["terraform", "opentofu", "infrastructure", "iac", "devops", "cli", "tui", "terminal"]
