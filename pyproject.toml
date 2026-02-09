@@ -10,25 +10,37 @@ readme = "README.md"
 authors = [
     { name = "Infrastructure Guide Team", email = "info@infra-guide.dev" }
 ]
+maintainers = [
+    { name = "Infrastructure Guide Team", email = "info@infra-guide.dev" }
+]
 license = { text = "MIT" }
 requires-python = ">=3.8"
+license-files = { paths = ["LICENSE"] }
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
     "Operating System :: OS Independent",
+    "Operating System :: POSIX",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: System :: Systems Administration",
+    "Topic :: System :: Infrastructure",
     "Topic :: Utilities",
-    "Environment :: Console",
 ]
-keywords = ["terraform", "opentofu", "infrastructure", "iac", "devops", "cli", "tui"]
+keywords = ["terraform", "opentofu", "infrastructure", "iac", "devops", "cli", "tui", "terminal"]
 
 dependencies = [
     "rich>=13.0.0",
@@ -47,6 +59,7 @@ Homepage = "https://github.com/iamtejas23/infra-guide"
 Documentation = "https://github.com/iamtejas23/infra-guide#readme"
 Repository = "https://github.com/iamtejas23/infra-guide"
 "Bug Tracker" = "https://github.com/iamtejas23/infra-guide/issues"
+Changelog = "https://github.com/iamtejas23/infra-guide/releases"
 
 [project.scripts]
 infra-guide = "infra_guide.cli:main"
@@ -55,6 +68,9 @@ infra-guide = "infra_guide.cli:main"
 where = ["."]
 include = ["infra_guide*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+infra_guide = ["py.typed"]
 
 [tool.black]
 line-length = 100

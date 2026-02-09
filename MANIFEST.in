@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include MANIFEST.in
+recursive-include infra_guide *.py
+recursive-include infra_guide *.typed
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store

@@ -67,16 +67,21 @@ That's it! No cloud credentials, API keys, or additional setup needed.
 
 ### Option 1: Install with pipx (Recommended)
 
+`pipx` is the recommended way to install command-line tools in isolated environments. It's available for macOS, Linux, and Windows.
+
+**Install pipx:**
+- **macOS**: `brew install pipx`
+- **Linux (Ubuntu/Debian)**: `sudo apt install pipx` or `pipx` via package manager
+- **Windows**: `scoop install pipx` or `choco install pipx` or download from [PyPA](https://pypa.io/en/latest/pipx/)
+
+**Install infra-guide:**
 ```bash
-# Install pipx if you don't have it
-sudo apt update
-sudo apt install pipx
+pipx install infra-guide
+```
 
-# Install infra-guide
-pipx install git+https://github.com/iamtejas23/infra-guide.git
-
-# Run the tool
-infra-guide
+**Verify installation:**
+```bash
+infra-guide --help
 ```
 
 ### Option 2: Install from Source
@@ -88,16 +93,25 @@ cd infra-guide
 
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install the package
 pip install .
+
+# Run the tool
+infra-guide
 ```
 
-### Option 3: Install from PyPI (when published)
+### Option 3: Install from GitHub (Development Version)
 
 ```bash
-pipx install infra-guide
+# Install directly from GitHub using pipx
+pipx install git+https://github.com/iamtejas23/infra-guide.git
+
+# Or from source directory
+git clone https://github.com/iamtejas23/infra-guide.git
+cd infra-guide
+pip install -e .
 ```
 
 ## 📖 Usage
