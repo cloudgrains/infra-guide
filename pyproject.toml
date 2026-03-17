@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "infra-guide"
-version = "0.4.0"
+version = "0.5.0"
 description = "An interactive TUI for Terraform and OpenTofu beginners with enterprise-grade features"
 readme = "README.md"
 authors = [
@@ -46,6 +46,7 @@ keywords = ["terraform", "opentofu", "infrastructure", "iac", "devops", "cli", "
 
 dependencies = [
     "rich>=13.0.0",
+    "Pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
@@ -70,6 +71,9 @@ infra-guide = "infra_guide.cli:main"
 where = ["."]
 include = ["infra_guide*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"infra_guide.assets" = ["*.png"]
 
 [tool.black]
 line-length = 100

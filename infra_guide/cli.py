@@ -416,6 +416,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         if args.command is None and not sys.stdin.isatty():
             parser.print_help()
             return 2
+        ui.set_logo_visibility(True)
         return run_interactive_app(ui, services)
 
     return dispatch_command(args, ui, services)

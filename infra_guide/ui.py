@@ -16,6 +16,7 @@ from rich.table import Table
 from rich.text import Text
 
 from infra_guide import __version__
+from infra_guide.logo import LogoRenderer
 from infra_guide.preferences import DEFAULT_THEME, THEMES, get_theme_palette
 
 
@@ -51,16 +52,23 @@ class InfraGuideUI:
         theme_name: str = DEFAULT_THEME,
     ):
         self.console = Console(no_color=no_color)
+        self.no_color = no_color
         self.tool_name = tool_name
         self.tool_version = tool_version
         self.theme_name = DEFAULT_THEME
         self.palette = get_theme_palette(DEFAULT_THEME)
+        self.show_logo = False
+        self.logo_renderer = LogoRenderer(no_color=no_color)
         self.set_theme(theme_name)
 
     def set_theme(self, theme_name: str):
         """Apply a different palette for the current session."""
         self.theme_name = theme_name if theme_name in THEMES else DEFAULT_THEME
         self.palette = get_theme_palette(self.theme_name)
+
+    def set_logo_visibility(self, enabled: bool):
+        """Enable or disable the interactive logo."""
+        self.show_logo = enabled
 
     def clear_screen(self):
         """Clear the terminal screen."""
@@ -97,9 +105,29 @@ class InfraGuideUI:
             else Text("Interactive infrastructure guide", style=self._muted_style())
         )
 
+        body = Group(hero, subtitle, Text(""), meta)
+        if self.show_logo and not self.no_color:
+            logo_width = self._logo_width()
+            logo = self.logo_renderer.render(max_width=logo_width)
+            if logo is not None:
+                body = Columns(
+                    [
+                        Panel(
+                            Align.center(logo, vertical="middle"),
+                            border_style=self._color("surface_alt"),
+                            box=box.ROUNDED,
+                            padding=(0, 1),
+                            width=logo_width + 6,
+                        ),
+                        body,
+                    ],
+                    expand=True,
+                    equal=False,
+                )
+
         self.console.print(
             Panel(
-                Group(hero, subtitle, Text(""), meta),
+                body,
                 border_style=self._color("surface"),
                 box=box.HEAVY,
                 padding=(1, 2),
@@ -691,3 +719,12 @@ class InfraGuideUI:
 
     def _color(self, token: str) -> str:
         return self.palette.get(token, "white")
+
+    def _logo_width(self) -> int:
+        if self.console.size.width >= 130:
+            return 22
+        if self.console.size.width >= 110:
+            return 18
+        if self.console.size.width >= 90:
+            return 14
+        return 10

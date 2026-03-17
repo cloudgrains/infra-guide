@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
 
 `infra-guide` is a product-style CLI and interactive command center for Terraform and OpenTofu. It blends guide-first workflows, direct subcommands, workspace diagnostics, and automation-friendly commands so the tool works for both learning and day-to-day operations.
 
@@ -26,7 +26,7 @@
 ## Demo
 
 ```text
-infra-guide  Command Center  v0.4.0
+infra-guide  Command Center  v0.5.0
 Tool: tofu (OpenTofu v1.11.5)
 Workspace: default
 Directory: ./envs/dev
