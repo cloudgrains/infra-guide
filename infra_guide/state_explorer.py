@@ -85,11 +85,11 @@ class StateExplorer:
             resource_address: The resource address (e.g., 'aws_instance.web')
 
         Returns:
-            Resource details as JSON string
+            Resource details as a formatted string
         """
         try:
             result = subprocess.run(
-                [self.tool_name, "state", "show", "-json", resource_address],
+                [self.tool_name, "state", "show", resource_address],
                 capture_output=True,
                 text=True,
                 timeout=30
@@ -101,6 +101,28 @@ class StateExplorer:
 
         except Exception:
             return None
+
+    def show_resource_detail_panel(self, resource_address: str):
+        """Display detailed information for a specific resource."""
+        self.console.print()
+
+        detail = self.show_resource_detail(resource_address)
+
+        if not detail:
+            self.console.print(
+                f"[bold red]ERROR Could not read resource: {resource_address}[/bold red]\n"
+            )
+            return
+
+        syntax = Syntax(detail, "hcl", theme="ansi_dark", word_wrap=True)
+        panel = Panel(
+            syntax,
+            title=f"Resource Detail: {resource_address}",
+            border_style="cyan",
+            box=box.ROUNDED,
+        )
+        self.console.print(panel)
+        self.console.print()
 
     def show_state_overview(self):
         """Display an overview of the state file."""

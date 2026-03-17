@@ -2,9 +2,10 @@
 Command execution module for running terraform/tofu commands.
 """
 
+import shlex
 import subprocess
 import sys
-from typing import Optional
+from typing import List, Optional
 
 
 class CommandRunner:
@@ -19,6 +20,43 @@ class CommandRunner:
         """
         self.tool_name = tool_name
 
+    def build_command(
+        self, command: str, additional_args: Optional[List[str]] = None
+    ) -> List[str]:
+        """
+        Build the final command list.
+
+        Args:
+            command: The subcommand to execute
+            additional_args: Extra arguments to append
+
+        Returns:
+            List[str]: Command parts suitable for subprocess
+        """
+        cmd = [self.tool_name, command]
+        if additional_args:
+            cmd.extend(additional_args)
+        return cmd
+
+    def format_command(
+        self, command: str, additional_args: Optional[List[str]] = None
+    ) -> str:
+        """
+        Return a shell-safe command preview string.
+
+        Args:
+            command: The subcommand to execute
+            additional_args: Extra arguments to append
+
+        Returns:
+            str: Shell-friendly command preview
+        """
+        cmd = self.build_command(command, additional_args)
+        try:
+            return shlex.join(cmd)
+        except AttributeError:
+            return " ".join(shlex.quote(part) for part in cmd)
+
     def execute(self, command: str, additional_args: Optional[list] = None) -> int:
         """
         Execute a terraform/tofu command.
@@ -30,10 +68,7 @@ class CommandRunner:
         Returns:
             int: Return code from the command (0 for success)
         """
-        cmd = [self.tool_name, command]
-        
-        if additional_args:
-            cmd.extend(additional_args)
+        cmd = self.build_command(command, additional_args)
 
         try:
             # Run the command with live output

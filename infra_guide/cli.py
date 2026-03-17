@@ -2,233 +2,752 @@
 Main CLI entry point for infra-guide.
 """
 
+import argparse
+import os
 import sys
-from infra_guide.detector import ToolDetector
-from infra_guide.ui import InfraGuideUI
-from infra_guide.runner import CommandRunner
-from infra_guide.drift_detector import DriftDetector
-from infra_guide.state_explorer import StateExplorer
-from infra_guide.workspace_manager import WorkspaceManager
-from infra_guide.validators import PreFlightValidator
+from typing import Any, Dict, List, Optional
+
+from rich.prompt import Confirm, Prompt
+
+from infra_guide import __version__
 from infra_guide.cicd import CICDRunner
-from infra_guide.guides import init, plan, apply, destroy
+from infra_guide.detector import ToolDetector
+from infra_guide.drift_detector import DriftDetector
+from infra_guide.guides import apply, destroy, init, plan
+from infra_guide.project_inspector import ProjectInspector
+from infra_guide.runner import CommandRunner
+from infra_guide.state_explorer import StateExplorer
+from infra_guide.ui import InfraGuideUI
+from infra_guide.validators import PreFlightValidator
+from infra_guide.workspace_manager import WorkspaceManager
 
 
-def main():
+GUIDE_MODULES = {
+    "init": init,
+    "plan": plan,
+    "apply": apply,
+    "destroy": destroy,
+}
+
+RISK_BY_COMMAND = {
+    "doctor": "low",
+    "init": "low",
+    "plan": "low",
+    "apply": "medium",
+    "destroy": "high",
+    "validate": "low",
+    "drift": "low",
+    "state": "low",
+    "workspace": "medium",
+    "fmt": "low",
+    "cicd": "medium",
+}
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the main argparse parser."""
+    parser = argparse.ArgumentParser(
+        prog="infra-guide",
+        description="Product-grade CLI and command center for Terraform and OpenTofu.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  infra-guide\n"
+            "  infra-guide doctor --with-drift\n"
+            "  infra-guide guide plan\n"
+            "  infra-guide plan --out tfplan\n"
+            "  infra-guide apply --plan-file tfplan --yes\n"
+            "  infra-guide workspace --select staging\n"
+            "  infra-guide plan -- --target=module.network"
+        ),
+    )
+    parser.add_argument(
+        "--tool",
+        choices=["tofu", "terraform"],
+        help="force a specific IaC tool instead of auto-detecting",
+    )
+    parser.add_argument(
+        "--cwd",
+        help="run infra-guide from a different working directory",
+    )
+    parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="disable ANSI styling in infra-guide output",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    subparsers.add_parser("interactive", help="launch the interactive command center")
+
+    subparsers.add_parser("status", help="show a fast workspace summary")
+
+    doctor_parser = subparsers.add_parser(
+        "doctor",
+        help="run workspace health checks with recommendations",
+    )
+    doctor_parser.add_argument(
+        "--with-drift",
+        action="store_true",
+        help="also run a drift check after validation",
+    )
+
+    guide_parser = subparsers.add_parser(
+        "guide",
+        help="show guidance and best practices for a command",
+    )
+    guide_parser.add_argument("guide_command", choices=sorted(GUIDE_MODULES.keys()))
+
+    subparsers.add_parser("validate", help="run pre-flight validation checks")
+    subparsers.add_parser("drift", help="detect infrastructure drift")
+
+    state_parser = subparsers.add_parser("state", help="explore current state")
+    state_parser.add_argument(
+        "--list",
+        dest="list_resources",
+        action="store_true",
+        help="list all resources in state",
+    )
+    state_parser.add_argument(
+        "--tree",
+        action="store_true",
+        help="show a tree view of the state",
+    )
+    state_parser.add_argument(
+        "--detail",
+        metavar="ADDRESS",
+        help="show detailed information for one resource",
+    )
+
+    workspace_parser = subparsers.add_parser("workspace", help="manage workspaces")
+    workspace_parser.add_argument(
+        "--list",
+        dest="list_workspaces",
+        action="store_true",
+        help="list workspaces and show the current one",
+    )
+    workspace_parser.add_argument(
+        "--select",
+        dest="select_workspace",
+        metavar="NAME",
+        help="switch to an existing workspace",
+    )
+    workspace_parser.add_argument(
+        "--create",
+        dest="create_workspace",
+        metavar="NAME",
+        help="create a new workspace",
+    )
+    workspace_parser.add_argument(
+        "--delete",
+        dest="delete_workspace",
+        metavar="NAME",
+        help="delete a workspace",
+    )
+
+    fmt_parser = subparsers.add_parser("fmt", help="format Terraform/OpenTofu files")
+    fmt_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="only check formatting without modifying files",
+    )
+    fmt_parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="show formatting differences",
+    )
+    fmt_parser.add_argument(
+        "--no-recursive",
+        action="store_true",
+        help="format only the current directory",
+    )
+    add_passthrough_args(fmt_parser)
+
+    cicd_parser = subparsers.add_parser("cicd", help="run the CI/CD flow")
+    cicd_parser.add_argument(
+        "--skip-init",
+        action="store_true",
+        help="skip the init step",
+    )
+    cicd_parser.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="skip validation checks",
+    )
+
+    init_parser = subparsers.add_parser("init", help="initialize a working directory")
+    init_parser.add_argument("--upgrade", action="store_true", help="upgrade providers and modules")
+    init_parser.add_argument("--reconfigure", action="store_true", help="reconfigure backend settings")
+    init_parser.add_argument("--migrate-state", action="store_true", help="migrate backend state")
+    init_parser.add_argument(
+        "--backend-config",
+        dest="backend_configs",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="backend config file or key=value pair",
+    )
+    init_parser.add_argument(
+        "--no-get",
+        action="store_true",
+        help="skip module downloads",
+    )
+    add_passthrough_args(init_parser)
+
+    plan_parser = subparsers.add_parser("plan", help="preview infrastructure changes")
+    add_common_runtime_options(plan_parser, allow_target=True)
+    plan_parser.add_argument("--out", metavar="PATH", help="save the plan to a file")
+    plan_parser.add_argument(
+        "--detailed-exitcode",
+        action="store_true",
+        help="return 2 when changes are present",
+    )
+    plan_parser.add_argument(
+        "--destroy-mode",
+        action="store_true",
+        help="create a destroy plan instead of a change plan",
+    )
+    plan_parser.add_argument(
+        "--refresh-only",
+        action="store_true",
+        help="check drift without proposing changes",
+    )
+    plan_parser.add_argument(
+        "--no-refresh",
+        action="store_true",
+        help="skip refreshing remote objects before planning",
+    )
+    plan_parser.add_argument(
+        "--replace",
+        dest="replacements",
+        action="append",
+        default=[],
+        metavar="ADDRESS",
+        help="force replacement for a resource address",
+    )
+    add_passthrough_args(plan_parser)
+
+    apply_parser = subparsers.add_parser("apply", help="apply infrastructure changes")
+    add_common_runtime_options(apply_parser, allow_target=True)
+    apply_parser.add_argument(
+        "--plan-file",
+        metavar="PATH",
+        help="apply a saved plan file",
+    )
+    apply_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="skip infra-guide confirmation and pass -auto-approve",
+    )
+    apply_parser.add_argument(
+        "--no-refresh",
+        action="store_true",
+        help="skip refreshing remote objects before apply",
+    )
+    add_passthrough_args(apply_parser)
+
+    destroy_parser = subparsers.add_parser("destroy", help="destroy managed infrastructure")
+    add_common_runtime_options(destroy_parser, allow_target=True)
+    destroy_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="skip infra-guide confirmation and pass -auto-approve",
+    )
+    destroy_parser.add_argument(
+        "--no-refresh",
+        action="store_true",
+        help="skip refreshing remote objects before destroy",
+    )
+    add_passthrough_args(destroy_parser)
+
+    return parser
+
+
+def add_common_runtime_options(
+    parser: argparse.ArgumentParser, allow_target: bool = True
+):
+    """Add shared flags used by plan/apply/destroy commands."""
+    parser.add_argument(
+        "--var",
+        dest="vars",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="set a root module variable",
+    )
+    parser.add_argument(
+        "--var-file",
+        dest="var_files",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="load variables from a file",
+    )
+    if allow_target:
+        parser.add_argument(
+            "--target",
+            dest="targets",
+            action="append",
+            default=[],
+            metavar="ADDRESS",
+            help="limit the operation to a specific resource or module",
+        )
+    parser.add_argument(
+        "--parallelism",
+        type=int,
+        metavar="N",
+        help="limit concurrent operations",
+    )
+    parser.add_argument(
+        "--lock-timeout",
+        metavar="DURATION",
+        help="retry duration for acquiring a state lock, for example 30s",
+    )
+    parser.add_argument(
+        "--compact-warnings",
+        action="store_true",
+        help="request compact warning output from the IaC tool",
+    )
+    parser.add_argument(
+        "--show-sensitive",
+        action="store_true",
+        help="show sensitive values when supported",
+    )
+
+
+def add_passthrough_args(parser: argparse.ArgumentParser):
+    """Allow raw flags to be forwarded after '--'."""
+    parser.add_argument(
+        "extra_args",
+        nargs=argparse.REMAINDER,
+        help="raw flags to pass through after '--'",
+    )
+
+
+def main(argv: Optional[List[str]] = None) -> int:
     """Main entry point for the infra-guide CLI."""
-    
-    # Detect available tool
-    tool = ToolDetector.detect()
-    
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.cwd:
+        try:
+            os.chdir(args.cwd)
+        except OSError as error:
+            print(f"ERROR: could not change directory to '{args.cwd}': {error}", file=sys.stderr)
+            return 2
+
+    tool = args.tool or ToolDetector.detect()
     if tool is None:
-        # No tool found - show error and exit
-        temp_ui = InfraGuideUI("none", "none")
+        temp_ui = InfraGuideUI("none", "none", no_color=args.no_color)
         temp_ui.show_no_tool_error()
-        sys.exit(1)
-    
-    # Get tool version
-    version = ToolDetector.get_version(tool)
-    
-    # Initialize UI and runner
-    ui = InfraGuideUI(tool, version)
-    runner = CommandRunner(tool)
-    drift_detector = DriftDetector(tool)
-    state_explorer = StateExplorer(tool)
-    workspace_manager = WorkspaceManager(tool)
-    validator = PreFlightValidator(tool)
-    cicd_runner = CICDRunner(tool)
-    
-    # Main application loop
+        return 1
+
+    tool_version = ToolDetector.get_version(tool)
+    ui = InfraGuideUI(tool, tool_version, no_color=args.no_color)
+
+    services = {
+        "runner": CommandRunner(tool),
+        "drift_detector": DriftDetector(tool),
+        "state_explorer": StateExplorer(tool),
+        "workspace_manager": WorkspaceManager(tool),
+        "validator": PreFlightValidator(tool),
+        "cicd_runner": CICDRunner(tool),
+        "inspector": ProjectInspector(tool),
+    }
+
+    if args.command in (None, "interactive"):
+        if args.command is None and not sys.stdin.isatty():
+            parser.print_help()
+            return 2
+        return run_interactive_app(ui, services)
+
+    return dispatch_command(args, ui, services)
+
+
+def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[str, Any]) -> int:
+    """Dispatch direct CLI commands."""
+    if args.command == "status":
+        snapshot = services["inspector"].inspect(include_state=False)
+        ui.show_banner(snapshot=snapshot, title="Status")
+        ui.show_project_status(snapshot)
+        return 0
+
+    if args.command == "doctor":
+        return run_doctor(
+            ui,
+            services["inspector"],
+            services["validator"],
+            services["drift_detector"],
+            with_drift=args.with_drift,
+        )
+
+    if args.command == "guide":
+        return show_guide_command(ui, services["inspector"], args.guide_command)
+
+    if args.command == "validate":
+        results = services["validator"].run_all_checks()
+        services["validator"].show_validation_report(results)
+        return 1 if results["failed"] > 0 else 0
+
+    if args.command == "drift":
+        drift_data = services["drift_detector"].detect_drift()
+        services["drift_detector"].show_drift_report(drift_data)
+        if not drift_data.get("success"):
+            return 1
+        return 2 if drift_data.get("drift_detected") else 0
+
+    if args.command == "state":
+        return run_state_command(args, services["state_explorer"])
+
+    if args.command == "workspace":
+        return run_workspace_command(args, services["workspace_manager"])
+
+    if args.command == "fmt":
+        command_args = build_fmt_args(args)
+        return execute_direct_command(
+            command_name="fmt",
+            command_args=command_args,
+            ui=ui,
+            runner=services["runner"],
+            inspector=services["inspector"],
+        )
+
+    if args.command == "cicd":
+        success = services["cicd_runner"].run_full_pipeline(
+            skip_init=args.skip_init,
+            skip_validation=args.skip_validation,
+        )
+        return 0 if success else 1
+
+    if args.command in GUIDE_MODULES:
+        command_args = build_command_args(args.command, args)
+        return execute_direct_command(
+            command_name=args.command,
+            command_args=command_args,
+            ui=ui,
+            runner=services["runner"],
+            inspector=services["inspector"],
+            require_confirmation=args.command in ("apply", "destroy"),
+            auto_confirm=getattr(args, "yes", False),
+            detailed_exitcode=getattr(args, "detailed_exitcode", False),
+        )
+
+    ui.show_error(f"Unknown command: {args.command}")
+    return 2
+
+
+def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
+    """Run the interactive command center."""
     while True:
+        snapshot = services["inspector"].inspect(include_state=False)
         ui.clear_screen()
-        ui.show_banner()
-        
+        ui.show_dashboard(snapshot)
+
         choice = ui.show_menu()
-        
+
         if choice == "1":
-            handle_init(ui, runner, tool)
+            ui.clear_screen()
+            run_doctor(
+                ui,
+                services["inspector"],
+                services["validator"],
+                services["drift_detector"],
+                with_drift=False,
+                title="Doctor",
+            )
+            ui.wait_for_enter()
         elif choice == "2":
-            handle_plan(ui, runner, tool)
+            run_guided_command(
+                "init",
+                ui,
+                services["runner"],
+                services["inspector"],
+            )
         elif choice == "3":
-            handle_apply(ui, runner, tool)
+            run_guided_command(
+                "plan",
+                ui,
+                services["runner"],
+                services["inspector"],
+            )
         elif choice == "4":
-            handle_destroy(ui, runner, tool)
+            run_guided_command(
+                "apply",
+                ui,
+                services["runner"],
+                services["inspector"],
+            )
         elif choice == "5":
-            handle_validate(ui, validator)
+            run_guided_command(
+                "destroy",
+                ui,
+                services["runner"],
+                services["inspector"],
+            )
         elif choice == "6":
-            handle_drift(ui, drift_detector)
+            ui.clear_screen()
+            ui.show_banner(snapshot=services["inspector"].inspect(), title="Validate")
+            results = services["validator"].run_all_checks()
+            services["validator"].show_validation_report(results)
+            ui.wait_for_enter()
         elif choice == "7":
-            handle_state(ui, state_explorer)
+            ui.clear_screen()
+            ui.show_banner(snapshot=services["inspector"].inspect(), title="Drift Detection")
+            ui.show_info("Detecting infrastructure drift...")
+            drift_data = services["drift_detector"].detect_drift()
+            services["drift_detector"].show_drift_report(drift_data)
+            ui.wait_for_enter()
         elif choice == "8":
-            workspace_manager.show_workspace_menu()
+            handle_state_menu(ui, services["state_explorer"], services["inspector"])
         elif choice == "9":
-            handle_cicd(ui, cicd_runner)
+            services["workspace_manager"].show_workspace_menu()
+        elif choice == "10":
+            handle_fmt_menu(ui, services["runner"], services["inspector"])
+        elif choice == "11":
+            handle_cicd_menu(ui, services["cicd_runner"], services["inspector"])
         elif choice == "0":
             ui.clear_screen()
             ui.show_goodbye()
-            sys.exit(0)
+            return 0
 
 
-def handle_init(ui: InfraGuideUI, runner: CommandRunner, tool: str):
-    """Handle the init command."""
-    ui.clear_screen()
-    ui.show_banner()
-    
-    guide_data = init.get_guide()
+def show_guide_command(
+    ui: InfraGuideUI, inspector: ProjectInspector, command_name: str
+) -> int:
+    """Display a guide for a direct CLI command."""
+    snapshot = inspector.inspect(include_state=False)
+    guide_data = GUIDE_MODULES[command_name].get_guide()
+    ui.show_banner(snapshot=snapshot, title=f"{command_name} Guide")
     ui.show_guide(
-        title="init",
+        title=command_name,
         description=guide_data["description"],
         flags=guide_data["flags"],
         best_practices=guide_data["best_practices"],
-        warnings=guide_data["warnings"]
+        warnings=guide_data["warnings"],
+        risk_level=guide_data.get("risk", RISK_BY_COMMAND.get(command_name, "low")),
+        examples=guide_data.get("examples"),
     )
-    
-    if ui.confirm_execution(f"{tool} init"):
-        ui.show_command_output_header(f"{tool} init")
-        return_code = runner.execute("init")
-        
-        if return_code == 0:
-            ui.show_success("Initialization completed successfully!")
-        else:
-            ui.show_error(f"Initialization failed with exit code {return_code}")
-        
-        ui.wait_for_enter()
-    else:
-        ui.show_info("Command cancelled.")
-        ui.wait_for_enter()
+    return 0
 
 
-def handle_plan(ui: InfraGuideUI, runner: CommandRunner, tool: str):
-    """Handle the plan command."""
+def run_guided_command(
+    command_name: str,
+    ui: InfraGuideUI,
+    runner: CommandRunner,
+    inspector: ProjectInspector,
+):
+    """Run an interactive guide-first command flow."""
+    guide_data = GUIDE_MODULES[command_name].get_guide()
+    snapshot = inspector.inspect(include_state=False)
+
     ui.clear_screen()
-    ui.show_banner()
-    
-    guide_data = plan.get_guide()
+    ui.show_banner(snapshot=snapshot, title=f"{command_name} Guide")
     ui.show_guide(
-        title="plan",
+        title=command_name,
         description=guide_data["description"],
         flags=guide_data["flags"],
         best_practices=guide_data["best_practices"],
-        warnings=guide_data["warnings"]
+        warnings=guide_data["warnings"],
+        risk_level=guide_data.get("risk", RISK_BY_COMMAND.get(command_name, "low")),
+        examples=guide_data.get("examples"),
     )
-    
-    if ui.confirm_execution(f"{tool} plan"):
-        ui.show_command_output_header(f"{tool} plan")
-        return_code = runner.execute("plan")
-        
-        if return_code == 0:
-            ui.show_success("Plan completed successfully!")
-        else:
-            ui.show_error(f"Plan failed with exit code {return_code}")
-        
-        ui.wait_for_enter()
+
+    extra_args = ui.prompt_for_extra_args()
+    preview = runner.format_command(command_name, extra_args)
+    ui.show_command_preview(
+        preview,
+        risk_level=guide_data.get("risk", RISK_BY_COMMAND.get(command_name, "low")),
+    )
+
+    if ui.confirm_execution(
+        preview,
+        risk_level=guide_data.get("risk", RISK_BY_COMMAND.get(command_name, "low")),
+    ):
+        ui.show_command_output_header(preview)
+        return_code = runner.execute(command_name, extra_args)
+        summarize_command_result(ui, command_name, return_code)
     else:
         ui.show_info("Command cancelled.")
-        ui.wait_for_enter()
 
-
-def handle_apply(ui: InfraGuideUI, runner: CommandRunner, tool: str):
-    """Handle the apply command."""
-    ui.clear_screen()
-    ui.show_banner()
-    
-    guide_data = apply.get_guide()
-    ui.show_guide(
-        title="apply",
-        description=guide_data["description"],
-        flags=guide_data["flags"],
-        best_practices=guide_data["best_practices"],
-        warnings=guide_data["warnings"]
-    )
-    
-    if ui.confirm_execution(f"{tool} apply"):
-        ui.show_command_output_header(f"{tool} apply")
-        return_code = runner.execute("apply")
-        
-        if return_code == 0:
-            ui.show_success("Apply completed successfully!")
-        else:
-            ui.show_error(f"Apply failed with exit code {return_code}")
-        
-        ui.wait_for_enter()
-    else:
-        ui.show_info("Command cancelled.")
-        ui.wait_for_enter()
-
-
-def handle_destroy(ui: InfraGuideUI, runner: CommandRunner, tool: str):
-    """Handle the destroy command."""
-    ui.clear_screen()
-    ui.show_banner()
-    
-    guide_data = destroy.get_guide()
-    ui.show_guide(
-        title="destroy",
-        description=guide_data["description"],
-        flags=guide_data["flags"],
-        best_practices=guide_data["best_practices"],
-        warnings=guide_data["warnings"]
-    )
-    
-    if ui.confirm_execution(f"{tool} destroy"):
-        ui.show_command_output_header(f"{tool} destroy")
-        return_code = runner.execute("destroy")
-        
-        if return_code == 0:
-            ui.show_success("Destroy completed successfully!")
-        else:
-            ui.show_error(f"Destroy failed with exit code {return_code}")
-        
-        ui.wait_for_enter()
-    else:
-        ui.show_info("Command cancelled.")
-        ui.wait_for_enter()
-
-
-def handle_validate(ui: InfraGuideUI, validator: PreFlightValidator):
-    """Handle pre-flight validation."""
-    ui.clear_screen()
-    ui.show_banner()
-    
-    ui.show_info("Running comprehensive pre-flight checks...")
-    results = validator.run_all_checks()
-    validator.show_validation_report(results)
-    
     ui.wait_for_enter()
 
 
-def handle_drift(ui: InfraGuideUI, drift_detector: DriftDetector):
-    """Handle drift detection."""
-    ui.clear_screen()
-    ui.show_banner()
-    
-    ui.show_info("Detecting infrastructure drift...")
-    drift_data = drift_detector.detect_drift()
-    drift_detector.show_drift_report(drift_data)
-    
-    ui.wait_for_enter()
+def execute_direct_command(
+    command_name: str,
+    command_args: List[str],
+    ui: InfraGuideUI,
+    runner: CommandRunner,
+    inspector: ProjectInspector,
+    require_confirmation: bool = False,
+    auto_confirm: bool = False,
+    detailed_exitcode: bool = False,
+) -> int:
+    """Execute a direct command with a product-style summary and exit code handling."""
+    snapshot = inspector.inspect(include_state=False)
+    ui.show_banner(snapshot=snapshot, title=command_name)
+    ui.show_project_status(snapshot, title="Workspace Snapshot")
+
+    preview = runner.format_command(command_name, command_args)
+    risk_level = RISK_BY_COMMAND.get(command_name, "low")
+    ui.show_command_preview(preview, risk_level=risk_level)
+
+    if require_confirmation:
+        if not auto_confirm and not sys.stdin.isatty():
+            ui.show_error(
+                f"Non-interactive '{command_name}' requires --yes so the underlying tool can run without prompts."
+            )
+            return 2
+
+        if (
+            not auto_confirm
+            and sys.stdin.isatty()
+            and not ui.confirm_execution(preview, risk_level=risk_level)
+        ):
+            ui.show_info("Command cancelled.")
+            return 130
+
+    ui.show_command_output_header(preview)
+    return_code = runner.execute(command_name, command_args)
+    summarize_command_result(ui, command_name, return_code, detailed_exitcode=detailed_exitcode)
+    return return_code
 
 
-def handle_state(ui: InfraGuideUI, state_explorer: StateExplorer):
-    """Handle state exploration."""
+def summarize_command_result(
+    ui: InfraGuideUI, command_name: str, return_code: int, detailed_exitcode: bool = False
+):
+    """Display a friendly summary after command execution."""
+    if detailed_exitcode and command_name == "plan" and return_code == 2:
+        ui.show_info("Plan completed successfully and detected infrastructure changes.")
+        return
+
+    if return_code == 0:
+        ui.show_success(f"{command_name} completed successfully.")
+    else:
+        ui.show_error(f"{command_name} exited with code {return_code}.")
+
+
+def run_doctor(
+    ui: InfraGuideUI,
+    inspector: ProjectInspector,
+    validator: PreFlightValidator,
+    drift_detector: DriftDetector,
+    with_drift: bool = False,
+    title: str = "Doctor",
+) -> int:
+    """Run the doctor flow."""
+    snapshot = inspector.inspect(include_state=True)
+    ui.show_banner(snapshot=snapshot, title=title)
+    ui.show_project_status(snapshot, title="Doctor Overview")
+
+    ui.show_info("Running pre-flight checks...")
+    validation_results = validator.run_all_checks()
+    validator.show_validation_report(validation_results)
+
+    if with_drift:
+        ui.show_info("Running drift detection...")
+        drift_data = drift_detector.detect_drift()
+        drift_detector.show_drift_report(drift_data)
+        if not drift_data.get("success"):
+            return 1
+
+    return 1 if validation_results["failed"] > 0 else 0
+
+
+def run_state_command(args: argparse.Namespace, state_explorer: StateExplorer) -> int:
+    """Run one of the state explorer direct commands."""
+    if args.detail:
+        state_explorer.show_resource_detail_panel(args.detail)
+        return 0
+
+    if args.list_resources:
+        state_explorer.show_resources_list()
+        return 0
+
+    if args.tree:
+        state_explorer.show_resource_tree()
+        return 0
+
+    state_explorer.show_state_overview()
+    return 0
+
+
+def run_workspace_command(
+    args: argparse.Namespace, workspace_manager: WorkspaceManager
+) -> int:
+    """Run direct workspace commands."""
+    if args.create_workspace:
+        result = workspace_manager.create_workspace(args.create_workspace)
+        if result["success"]:
+            workspace_manager.console.print(
+                f"[bold green]OK[/bold green] Created workspace: {args.create_workspace}"
+            )
+            return 0
+
+        workspace_manager.console.print(
+            f"[bold red]ERROR[/bold red] {result['stderr'] or 'Failed to create workspace.'}"
+        )
+        return 1
+
+    if args.select_workspace:
+        result = workspace_manager.select_workspace(args.select_workspace)
+        if result["success"]:
+            workspace_manager.console.print(
+                f"[bold green]OK[/bold green] Switched to workspace: {args.select_workspace}"
+            )
+            return 0
+
+        workspace_manager.console.print(
+            f"[bold red]ERROR[/bold red] {result['stderr'] or 'Failed to switch workspace.'}"
+        )
+        return 1
+
+    if args.delete_workspace:
+        result = workspace_manager.delete_workspace(args.delete_workspace)
+        if result["success"]:
+            workspace_manager.console.print(
+                f"[bold green]OK[/bold green] Deleted workspace: {args.delete_workspace}"
+            )
+            return 0
+
+        workspace_manager.console.print(
+            f"[bold red]ERROR[/bold red] {result['stderr'] or 'Failed to delete workspace.'}"
+        )
+        return 1
+
+    if args.list_workspaces or not sys.stdin.isatty():
+        ws_info = workspace_manager.show_workspace_overview()
+        return 0 if ws_info.get("success") else 1
+
+    workspace_manager.show_workspace_menu()
+    return 0
+
+
+def handle_state_menu(
+    ui: InfraGuideUI, state_explorer: StateExplorer, inspector: ProjectInspector
+):
+    """Interactive state explorer menu."""
     while True:
         ui.clear_screen()
-        ui.show_banner()
-        
-        from rich.prompt import Prompt
-        
-        ui.console.print("\n[bold cyan]State Explorer Menu[/bold cyan]\n")
-        ui.console.print("1. Show state overview")
-        ui.console.print("2. List all resources")
-        ui.console.print("3. Show resource tree")
-        ui.console.print("4. Back to main menu\n")
-        
+        ui.show_banner(snapshot=inspector.inspect(include_state=True), title="State Explorer")
+
+        ui.console.print("\n[bold cyan]State Explorer[/bold cyan]\n")
+        ui.console.print("1. Overview")
+        ui.console.print("2. List resources")
+        ui.console.print("3. Resource tree")
+        ui.console.print("4. Resource detail")
+        ui.console.print("5. Back to main menu\n")
+
         choice = Prompt.ask(
             "[cyan]Select option[/cyan]",
-            choices=["1", "2", "3", "4"],
-            default="4"
+            choices=["1", "2", "3", "4", "5"],
+            default="5",
         )
-        
+
         if choice == "1":
             state_explorer.show_state_overview()
             ui.wait_for_enter()
@@ -239,33 +758,165 @@ def handle_state(ui: InfraGuideUI, state_explorer: StateExplorer):
             state_explorer.show_resource_tree()
             ui.wait_for_enter()
         elif choice == "4":
+            resource_address = Prompt.ask("[cyan]Enter resource address[/cyan]").strip()
+            if resource_address:
+                state_explorer.show_resource_detail_panel(resource_address)
+            ui.wait_for_enter()
+        elif choice == "5":
             break
 
 
-def handle_cicd(ui: InfraGuideUI, cicd_runner: CICDRunner):
-    """Handle CI/CD pipeline mode."""
+def handle_fmt_menu(ui: InfraGuideUI, runner: CommandRunner, inspector: ProjectInspector):
+    """Interactive formatter flow."""
     ui.clear_screen()
-    ui.show_banner()
-    
-    from rich.prompt import Confirm
-    
-    ui.console.print("\n[bold yellow]⚠️  CI/CD Pipeline Mode[/bold yellow]\n")
-    ui.console.print("[white]This mode runs a complete validation and planning pipeline.")
-    ui.console.print("Suitable for continuous integration environments.[/white]\n")
-    
-    if Confirm.ask("[cyan]Run CI/CD pipeline?[/cyan]", default=False):
-        ui.console.print()
-        success = cicd_runner.run_full_pipeline()
-        
-        if success:
-            ui.show_success("CI/CD pipeline completed successfully!")
-        else:
-            ui.show_error("CI/CD pipeline failed. Check output above.")
+    snapshot = inspector.inspect(include_state=False)
+    ui.show_banner(snapshot=snapshot, title="Formatter")
+    ui.show_project_status(snapshot, title="Workspace Snapshot")
+    ui.show_info("This will run a recursive format across the current workspace.")
+
+    extra_args = ui.prompt_for_extra_args()
+    command_args = ["-recursive"] + extra_args
+    preview = runner.format_command("fmt", command_args)
+    ui.show_command_preview(preview, risk_level="low")
+
+    if ui.confirm_execution(preview, risk_level="low"):
+        ui.show_command_output_header(preview)
+        return_code = runner.execute("fmt", command_args)
+        summarize_command_result(ui, "fmt", return_code)
     else:
-        ui.show_info("Pipeline cancelled.")
-    
+        ui.show_info("Formatting cancelled.")
+
     ui.wait_for_enter()
 
 
+def handle_cicd_menu(ui: InfraGuideUI, cicd_runner: CICDRunner, inspector: ProjectInspector):
+    """Interactive CI/CD flow."""
+    ui.clear_screen()
+    ui.show_banner(snapshot=inspector.inspect(include_state=False), title="CI/CD")
+    ui.show_info(
+        "This runs init, validation, and plan in a non-interactive pipeline-friendly flow."
+    )
+
+    if Confirm.ask("[cyan]Run the CI/CD pipeline now?[/cyan]", default=False):
+        success = cicd_runner.run_full_pipeline()
+        if success:
+            ui.show_success("CI/CD pipeline completed successfully.")
+        else:
+            ui.show_error("CI/CD pipeline failed. Review the output above.")
+    else:
+        ui.show_info("Pipeline cancelled.")
+
+    ui.wait_for_enter()
+
+
+def build_command_args(command_name: str, args: argparse.Namespace) -> List[str]:
+    """Build command arguments for init/plan/apply/destroy."""
+    if command_name == "init":
+        command_args = []
+        if args.no_color:
+            command_args.append("-no-color")
+        if args.upgrade:
+            command_args.append("-upgrade")
+        if args.reconfigure:
+            command_args.append("-reconfigure")
+        if args.migrate_state:
+            command_args.append("-migrate-state")
+        for backend_config in args.backend_configs:
+            command_args.append(f"-backend-config={backend_config}")
+        if args.no_get:
+            command_args.append("-get=false")
+        command_args.extend(clean_passthrough_args(args.extra_args))
+        return command_args
+
+    if command_name == "plan":
+        command_args = build_common_command_args(args)
+        if args.out:
+            command_args.append(f"-out={args.out}")
+        if args.detailed_exitcode:
+            command_args.append("-detailed-exitcode")
+        if args.destroy_mode:
+            command_args.append("-destroy")
+        if args.refresh_only:
+            command_args.append("-refresh-only")
+        if args.no_refresh:
+            command_args.append("-refresh=false")
+        for replacement in args.replacements:
+            command_args.extend(["-replace", replacement])
+        command_args.extend(clean_passthrough_args(args.extra_args))
+        return command_args
+
+    if command_name == "apply":
+        command_args = build_common_command_args(args)
+        if args.yes:
+            command_args.append("-auto-approve")
+        if args.no_refresh:
+            command_args.append("-refresh=false")
+        if args.plan_file:
+            command_args.append(args.plan_file)
+        command_args.extend(clean_passthrough_args(args.extra_args))
+        return command_args
+
+    if command_name == "destroy":
+        command_args = build_common_command_args(args)
+        if args.yes:
+            command_args.append("-auto-approve")
+        if args.no_refresh:
+            command_args.append("-refresh=false")
+        command_args.extend(clean_passthrough_args(args.extra_args))
+        return command_args
+
+    return clean_passthrough_args(getattr(args, "extra_args", []))
+
+
+def build_common_command_args(args: argparse.Namespace) -> List[str]:
+    """Build shared plan/apply/destroy arguments."""
+    command_args = []
+
+    if getattr(args, "no_color", False):
+        command_args.append("-no-color")
+    if getattr(args, "compact_warnings", False):
+        command_args.append("-compact-warnings")
+    if getattr(args, "show_sensitive", False):
+        command_args.append("-show-sensitive")
+    if getattr(args, "parallelism", None) is not None:
+        command_args.append(f"-parallelism={args.parallelism}")
+    if getattr(args, "lock_timeout", None):
+        command_args.append(f"-lock-timeout={args.lock_timeout}")
+
+    for variable in getattr(args, "vars", []):
+        command_args.extend(["-var", variable])
+
+    for var_file in getattr(args, "var_files", []):
+        command_args.extend(["-var-file", var_file])
+
+    for target in getattr(args, "targets", []):
+        command_args.extend(["-target", target])
+
+    return command_args
+
+
+def build_fmt_args(args: argparse.Namespace) -> List[str]:
+    """Build arguments for the fmt command."""
+    command_args = []
+    if args.no_color:
+        command_args.append("-no-color")
+    if args.check:
+        command_args.append("-check")
+    if args.diff:
+        command_args.append("-diff")
+    if not args.no_recursive:
+        command_args.append("-recursive")
+    command_args.extend(clean_passthrough_args(args.extra_args))
+    return command_args
+
+
+def clean_passthrough_args(extra_args: List[str]) -> List[str]:
+    """Normalize argparse remainder arguments."""
+    passthrough = list(extra_args or [])
+    if passthrough and passthrough[0] == "--":
+        passthrough = passthrough[1:]
+    return passthrough
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

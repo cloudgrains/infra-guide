@@ -24,6 +24,10 @@ class PreFlightValidator:
         self.tool_name = tool_name
         self.console = Console()
 
+    def _has_tf_files(self) -> bool:
+        """Return True when the current directory contains Terraform/OpenTofu files."""
+        return any(filename.endswith('.tf') for filename in os.listdir('.'))
+
     def run_all_checks(self) -> Dict[str, Any]:
         """
         Run all pre-flight checks.
@@ -88,6 +92,13 @@ class PreFlightValidator:
 
     def _check_syntax(self) -> Dict[str, Any]:
         """Validate configuration syntax."""
+        if not self._has_tf_files():
+            return {
+                "name": "Syntax Validation",
+                "status": "warning",
+                "message": "Skipped - no .tf files found"
+            }
+
         try:
             result = subprocess.run(
                 [self.tool_name, "validate", "-json"],
@@ -124,6 +135,13 @@ class PreFlightValidator:
 
     def _check_formatting(self) -> Dict[str, Any]:
         """Check if files are properly formatted."""
+        if not self._has_tf_files():
+            return {
+                "name": "Code Formatting",
+                "status": "warning",
+                "message": "Skipped - no .tf files found"
+            }
+
         try:
             result = subprocess.run(
                 [self.tool_name, "fmt", "-check", "-recursive"],
@@ -154,6 +172,13 @@ class PreFlightValidator:
 
     def _check_backend_config(self) -> Dict[str, Any]:
         """Check backend configuration."""
+        if not self._has_tf_files():
+            return {
+                "name": "Backend Configuration",
+                "status": "warning",
+                "message": "Skipped - no .tf files found"
+            }
+
         # Check for backend configuration in .tf files
         has_backend = False
         try:
@@ -187,6 +212,13 @@ class PreFlightValidator:
 
     def _check_provider_versions(self) -> Dict[str, Any]:
         """Check if provider versions are locked."""
+        if not self._has_tf_files():
+            return {
+                "name": "Provider Versions",
+                "status": "warning",
+                "message": "Skipped - no .tf files found"
+            }
+
         if os.path.exists('.terraform.lock.hcl'):
             return {
                 "name": "Provider Versions",
@@ -202,6 +234,13 @@ class PreFlightValidator:
 
     def _check_required_variables(self) -> Dict[str, Any]:
         """Check for required variables without defaults."""
+        if not self._has_tf_files():
+            return {
+                "name": "Required Variables",
+                "status": "warning",
+                "message": "Skipped - no .tf files found"
+            }
+
         # This is a simplified check
         try:
             result = subprocess.run(

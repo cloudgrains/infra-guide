@@ -11,6 +11,7 @@ def get_guide() -> dict:
         dict: Guide data with description, flags, best practices, and warnings
     """
     return {
+        "risk": "medium",
         "description": (
             "The 'apply' command executes the actions proposed in a plan to reach the desired "
             "state of your infrastructure. It will create, update, or delete resources as needed "
@@ -47,6 +48,11 @@ def get_guide() -> dict:
                 "flag": "-lock=false",
                 "description": "Don't lock state during operation (not recommended)"
             }
+        ],
+        "examples": [
+            "infra-guide apply",
+            "infra-guide apply --yes",
+            "infra-guide apply --plan-file tfplan --yes",
         ],
         "best_practices": [
             "Always run 'plan' first and review the output before running 'apply'",

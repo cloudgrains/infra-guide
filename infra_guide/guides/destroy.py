@@ -11,6 +11,7 @@ def get_guide() -> dict:
         dict: Guide data with description, flags, best practices, and warnings
     """
     return {
+        "risk": "high",
         "description": (
             "The 'destroy' command terminates and removes all resources managed by your "
             "configuration. It's the opposite of 'apply' - instead of creating or updating "
@@ -47,6 +48,11 @@ def get_guide() -> dict:
                 "flag": "-lock=false",
                 "description": "Don't lock state during operation (not recommended)"
             }
+        ],
+        "examples": [
+            "infra-guide destroy",
+            "infra-guide destroy --yes",
+            "infra-guide destroy -- --target=aws_instance.temporary",
         ],
         "best_practices": [
             "ALWAYS run 'plan -destroy' first to see what will be deleted",

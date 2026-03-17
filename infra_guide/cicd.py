@@ -22,8 +22,9 @@ class CICDRunner:
         self.tool_name = tool_name
         self.console = Console()
 
-    def run_command(self, command: str, auto_approve: bool = False, 
-                   detailed_exitcode: bool = False, json_output: bool = False) -> Dict[str, Any]:
+    def run_command(self, command: str, auto_approve: bool = False,
+                   detailed_exitcode: bool = False, json_output: bool = False,
+                   extra_args: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Run command in CI/CD-safe mode (non-interactive).
 
@@ -32,6 +33,7 @@ class CICDRunner:
             auto_approve: Whether to auto-approve (for apply/destroy)
             detailed_exitcode: Use detailed exit codes
             json_output: Request JSON output where supported
+            extra_args: Additional arguments to pass through
 
         Returns:
             Dict with execution results
@@ -52,6 +54,9 @@ class CICDRunner:
         if command in ['init', 'plan', 'apply', 'destroy']:
             cmd.append('-input=false')
 
+        if extra_args:
+            cmd.extend(extra_args)
+
         # Capture output
         try:
             result = subprocess.run(
@@ -61,12 +66,17 @@ class CICDRunner:
                 timeout=3600  # 1 hour timeout for long operations
             )
 
+            success_codes = {0}
+            if command == 'plan' and detailed_exitcode:
+                success_codes = {0, 2}
+
             return {
-                "success": result.returncode == 0,
+                "success": result.returncode in success_codes,
                 "exit_code": result.returncode,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
-                "command": ' '.join(cmd)
+                "command": ' '.join(cmd),
+                "has_changes": command == 'plan' and detailed_exitcode and result.returncode == 2
             }
 
         except subprocess.TimeoutExpired:
@@ -145,19 +155,14 @@ class CICDRunner:
         Returns:
             Dict with plan results
         """
-        result = self.run_command('plan', detailed_exitcode=True)
-        
-        # Save plan to file if successful
+        result = self.run_command(
+            'plan',
+            detailed_exitcode=True,
+            extra_args=[f'-out={output_file}']
+        )
+
         if result["success"]:
-            plan_result = subprocess.run(
-                [self.tool_name, 'plan', '-input=false', f'-out={output_file}'],
-                capture_output=True,
-                text=True
-            )
-            
-            if plan_result.returncode in [0, 2]:  # 0 = no changes, 2 = has changes
-                result["plan_file"] = output_file
-                result["has_changes"] = plan_result.returncode == 2
+            result["plan_file"] = output_file
 
         return result
 

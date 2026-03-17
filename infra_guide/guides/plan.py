@@ -11,6 +11,7 @@ def get_guide() -> dict:
         dict: Guide data with description, flags, best practices, and warnings
     """
     return {
+        "risk": "low",
         "description": (
             "The 'plan' command creates an execution plan, showing what actions would be taken "
             "to reach the desired state defined in your configuration files. It compares the "
@@ -47,6 +48,11 @@ def get_guide() -> dict:
                 "flag": "-detailed-exitcode",
                 "description": "Return detailed exit code (2 if changes, 0 if no changes)"
             }
+        ],
+        "examples": [
+            "infra-guide plan",
+            "infra-guide plan --out tfplan",
+            "infra-guide plan -- --target=module.network",
         ],
         "best_practices": [
             "Always run 'plan' before 'apply' to understand what changes will be made",

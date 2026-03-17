@@ -1,325 +1,190 @@
-# infra-guide 🚀
+# infra-guide
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
 
-**infra-guide** is a production-grade, interactive terminal UI (TUI) tool for Terraform and OpenTofu that combines beginner-friendly guidance with enterprise-level features. Learn infrastructure-as-code while using professional tools like drift detection, policy validation, and CI/CD integration.
+`infra-guide` is a product-style CLI and interactive command center for Terraform and OpenTofu. It blends guide-first workflows, direct subcommands, workspace diagnostics, and automation-friendly commands so the tool works for both learning and day-to-day operations.
 
-## ✨ Features
+## Features
 
-### Core Features
-- 🎯 **Auto-Detection**: Automatically detects whether you have Terraform or OpenTofu installed
-- 📚 **Interactive Guides**: Detailed explanations for each command before execution
-- 🎨 **Beautiful TUI**: Rich, colorful interface with a modern dark theme
-- ⚡ **No Setup Required**: No cloud credentials, no network calls, no telemetry
-- 🛡️ **Safety First**: Confirmation prompts and warnings before destructive operations
-- 📖 **Beginner-Friendly**: Best practices and common flags explained clearly
+- Real CLI surface with working `--help`, subcommands, and passthrough args
+- Interactive dashboard with readiness, backend, lock file, workspace, and state signals
+- `doctor` mode for project health checks and actionable recommendations
+- Guide mode for `init`, `plan`, `apply`, and `destroy`
+- Direct support for `init`, `plan`, `apply`, `destroy`, `fmt`, `state`, `workspace`, and `cicd`
+- Drift detection, validation, state exploration, and workspace management
+- Local-only execution with no telemetry and no cloud credentials required
 
-### Enterprise Features (v0.2.0) 🆕
-- 🔍 **Drift Detection**: Automatically detect when infrastructure has drifted from state
-- ✅ **Pre-Flight Validation**: Comprehensive checks before executing commands
-- 📦 **State Explorer**: Interactive browser for exploring state files with tree view
-- 📁 **Workspace Manager**: Easy management of multiple environments
-- 🚀 **CI/CD Mode**: Non-interactive pipeline mode for automation
-- 📊 **Resource Visualization**: View resources by type with detailed statistics
-- 🔄 **Smart Validation**: Syntax checking, format validation, and configuration analysis
+## Demo
 
-## 🎬 Demo
+```text
+infra-guide  Command Center  v0.3.0
+Tool: tofu (OpenTofu v1.11.5)
+Workspace: default
+Directory: ./envs/dev
 
-```
-🚀 infra-guide - Interactive Infrastructure Guide
-📦 Using: terraform (v1.6.0)
+Environment      Project Signals     Next Step
+Workspace: dev   Config files: 8     Ready to operate
+Readiness: READY Backend: YES        Recommended flow:
+                 Lock file: YES      doctor -> plan -> apply
 
-┌──────────────────── Main Menu - Enhanced Edition ───────────────────┐
-│ Option  Command      Description                                     │
-│ 1       init         🔧 Initialize a working directory               │
-│ 2       plan         📋 Show changes required                        │
-│ 3       apply        ✅ Create or update infrastructure              │
-│ 4       destroy      💥 Destroy infrastructure                       │
-│ 5       validate     ✓ Run pre-flight validations                   │
-│ 6       drift        🔍 Detect infrastructure drift                  │
-│ 7       state        📦 Explore state file                           │
-│ 8       workspace    📁 Manage workspaces                            │
-│ 9       cicd         🚀 CI/CD pipeline mode                          │
-│ 0       exit         🚪 Exit infra-guide                             │
-└─────────────────────────────────────────────────────────┘
-
-Select an option [1/2/3/4/5] (5):
+Command Palette
+1  doctor     Workspace health check with guidance   LOW
+2  init       Initialize providers and backend       LOW
+3  plan       Preview infrastructure changes         LOW
+4  apply      Apply changes to infrastructure        MEDIUM
+5  destroy    Remove managed infrastructure          HIGH
 ```
 
-## 📋 Prerequisites
+## Installation
 
-Before installing infra-guide, ensure you have:
+### pipx
 
-1. **Python 3.8 or higher**
-   ```bash
-   python3 --version
-   ```
-
-2. **Either Terraform OR OpenTofu** (at least one required)
-   - **Terraform**: [Download and Install](https://www.terraform.io/downloads)
-   - **OpenTofu**: [Download and Install](https://opentofu.org/docs/intro/install/)
-
-That's it! No cloud credentials, API keys, or additional setup needed.
-
-## 🚀 Installation
-
-### Option 1: Install with pipx (Recommended)
-
-`pipx` is the recommended way to install command-line tools in isolated environments. It's available for macOS, Linux, and Windows.
-
-**Install pipx:**
-- **macOS**: `brew install pipx`
-- **Linux (Ubuntu/Debian)**: `sudo apt install pipx` or `pipx` via package manager
-- **Windows**: `scoop install pipx` or `choco install pipx` or download from [PyPA](https://pypa.io/en/latest/pipx/)
-
-**Install infra-guide:**
 ```bash
 pipx install infra-guide
-```
-
-**Verify installation:**
-```bash
 infra-guide --help
 ```
 
-### Option 2: Install from Source
+### From source
 
 ```bash
-# Clone the repository
 git clone https://github.com/iamtejas23/infra-guide.git
 cd infra-guide
-
-# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install the package
+source venv/bin/activate
 pip install .
-
-# Run the tool
 infra-guide
 ```
 
-### Option 3: Install from GitHub (Development Version)
+## Usage
 
-```bash
-# Install directly from GitHub using pipx
-pipx install git+https://github.com/iamtejas23/infra-guide.git
-
-# Or from source directory
-git clone https://github.com/iamtejas23/infra-guide.git
-cd infra-guide
-pip install -e .
-```
-
-## 📖 Usage
-
-Simply run the command from any directory containing Terraform/OpenTofu configuration files:
+### Interactive mode
 
 ```bash
 infra-guide
 ```
 
-### Navigation
-
-- Use number keys (1-5) to select menu options
-- Follow the on-screen prompts
-- Read the guides before executing commands
-- Confirm when prompted before any command execution
-
-### Example Workflow
-
-**Basic Workflow:**
-1. **Initialize your project** - Select option 1 (init)
-2. **Validate configuration** - Select option 5 (validate) for pre-flight checks
-3. **Preview changes** - Select option 2 (plan)
-4. **Apply changes** - Select option 3 (apply)
-
-**Advanced Workflow:**
-1. **Check for drift** - Select option 6 (drift) to detect changes outside Terraform
-2. **Explore state** - Select option 7 (state) to view current infrastructure
-3. **Manage environments** - Select option 8 (workspace) to switch between dev/staging/prod
-4. **Run CI/CD pipeline** - Select option 9 (cicd) for automated validation
-
-## 🎯 Supported Commands
-
-| Command | Description | Risk Level | New in v0.2.0 |
-|---------|-------------|------------|---------------|
-| `init` | Initialize working directory | 🟢 Low | |
-| `plan` | Preview infrastructure changes | 🟢 Low | |
-| `apply` | Create/update infrastructure | 🟡 Medium | |
-| `destroy` | Delete all infrastructure | 🔴 High | |
-| `validate` | Run pre-flight checks | 🟢 Low | ✅ |
-| `drift` | Detect infrastructure drift | 🟢 Low | ✅ |
-| `state` | Explore state file | 🟢 Low | ✅ |
-| `workspace` | Manage workspaces | 🟡 Medium | ✅ |
-| `cicd` | Run CI/CD pipeline | 🟡 Medium | ✅ |
-
-## � Feature Deep Dive
-
-### 🔍 Drift Detection
-Automatically detects when your actual infrastructure has diverged from the state file. This happens when changes are made outside of Terraform/OpenTofu (manual changes, other tools, etc.).
+### Direct CLI mode
 
 ```bash
-# In infra-guide, select option 6
-# Shows which resources have drifted and what changed
+infra-guide status
+infra-guide doctor --with-drift
+infra-guide guide plan
+infra-guide init --upgrade
+infra-guide plan --out tfplan
+infra-guide apply --plan-file tfplan --yes
+infra-guide workspace --select staging
+infra-guide fmt --check
 ```
 
-### ✅ Pre-Flight Validation
-Runs comprehensive checks before you execute commands:
-- Configuration file existence
-- Initialization status
-- Syntax validation
-- Code formatting
-- Backend configuration
-- Provider version locks
-- Required variables
-
-### 📦 State Explorer
-Interactive browser for your state file:
-- **Overview**: Total resources and types
-- **Resource List**: All resources with addresses
-- **Tree View**: Hierarchical visualization by resource type
-
-### 📁 Workspace Manager
-Easily manage multiple environments:
-- List all workspaces
-- Switch between workspaces
-- Create new workspaces
-- Delete unused workspaces
-- Visual indication of current workspace
-
-### 🚀 CI/CD Pipeline Mode
-Non-interactive mode perfect for automation:
-- Runs init → validate → plan automatically
-- Uses detailed exit codes
-- No user prompts
-- Designed for continuous integration
-
-## �🔒 Security & Privacy
-
-- **No Telemetry**: We don't collect any data
-- **No Network Calls**: Works completely offline
-- **No Credentials Required**: Only wraps Terraform/OpenTofu CLI
-- **Open Source**: Fully transparent, auditable code
-- **Local Execution**: All commands run locally on your machine
-
-## 🛠️ Development
-
-### Setting Up Development Environment
+### Passing through raw flags
 
 ```bash
-# Clone the repository
+infra-guide plan -- --target=module.network
+infra-guide init -- --backend-config=env/dev.backend.hcl
+infra-guide destroy -- --target=aws_instance.temporary
+```
+
+## Suggested workflow
+
+1. Run `infra-guide doctor` to understand workspace readiness.
+2. Run `infra-guide init` if the directory has not been initialized.
+3. Run `infra-guide plan --out tfplan` to preview and save changes.
+4. Run `infra-guide apply --plan-file tfplan --yes` when ready to execute.
+
+## Commands
+
+| Command | Description | Risk |
+| --- | --- | --- |
+| `status` | Show a fast workspace summary | Low |
+| `doctor` | Run health diagnostics and recommendations | Low |
+| `guide <command>` | Show best practices and examples for a command | Low |
+| `init` | Initialize providers, modules, and backend | Low |
+| `plan` | Preview infrastructure changes | Low |
+| `apply` | Create or update infrastructure | Medium |
+| `destroy` | Delete managed infrastructure | High |
+| `validate` | Run pre-flight checks | Low |
+| `drift` | Detect infrastructure drift | Low |
+| `state` | Show state overview, list, tree, or resource detail | Low |
+| `workspace` | List, create, select, or delete workspaces | Medium |
+| `fmt` | Format Terraform/OpenTofu files | Low |
+| `cicd` | Run a pipeline-friendly init/validate/plan flow | Medium |
+
+## Feature notes
+
+### Doctor and status
+
+```bash
+infra-guide status
+infra-guide doctor
+infra-guide doctor --with-drift
+```
+
+`status` is lightweight. `doctor` adds validation and exits non-zero when critical checks fail.
+
+### State explorer
+
+```bash
+infra-guide state
+infra-guide state --list
+infra-guide state --tree
+infra-guide state --detail aws_instance.web
+```
+
+### Workspace management
+
+```bash
+infra-guide workspace --list
+infra-guide workspace --create dev
+infra-guide workspace --select prod
+infra-guide workspace --delete staging
+```
+
+### CI/CD mode
+
+```bash
+infra-guide cicd
+infra-guide cicd --skip-init
+infra-guide cicd --skip-validation
+```
+
+## Security and privacy
+
+- No telemetry
+- No network calls beyond your Terraform/OpenTofu usage
+- No credential handling inside infra-guide
+- Local execution only
+- Open source and auditable
+
+## Development
+
+```bash
 git clone https://github.com/iamtejas23/infra-guide.git
 cd infra-guide
-
-# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install in development mode with dev dependencies
+source venv/bin/activate
 pip install -e ".[dev]"
-```
-
-### Running Tests
-
-```bash
 pytest
-```
-
-### Code Formatting
-
-```bash
 black infra_guide/
-```
-
-### Type Checking
-
-```bash
 mypy infra_guide/
 ```
 
-## 📁 Project Structure
+## Project structure
 
-```
+```text
 infra-guide/
 ├── infra_guide/
-│   ├── __init__.py          # Package initialization
-│   ├── cli.py               # Main CLI entry point
-│   ├── detector.py          # Tool detection logic
-│   ├── ui.py                # UI components using rich
-│   ├── runner.py            # Command execution
+│   ├── cli.py
+│   ├── project_inspector.py
+│   ├── runner.py
+│   ├── ui.py
+│   ├── validators.py
+│   ├── drift_detector.py
+│   ├── state_explorer.py
+│   ├── workspace_manager.py
+│   ├── cicd.py
 │   └── guides/
-│       ├── __init__.py
-│       ├── init.py          # Init command guide
-│       ├── plan.py          # Plan command guide
-│       ├── apply.py         # Apply command guide
-│       └── destroy.py       # Destroy command guide
-├── pyproject.toml           # Project configuration
-├── README.md                # This file
-└── LICENSE                  # MIT License
+├── pyproject.toml
+└── README.md
 ```
-
-## 🗺️ Roadmap
-
-### Completed ✅
-- [x] Core IaC commands (init, plan, apply, destroy)
-- [x] Drift detection
-- [x] Pre-flight validations
-- [x] State explorer with tree visualization
-- [x] Workspace management
-- [x] CI/CD pipeline mode
-- [x] Comprehensive error handling
-
-### Coming Soon
-- [ ] Policy-as-code integration (OPA, Sentinel)
-- [ ] Cost estimation before apply
-- [ ] Graph visualization of resource dependencies
-- [ ] Plan diff with syntax highlighting
-- [ ] Custom command templates
-- [ ] Configuration file for user preferences
-- [ ] Color theme customization
-- [ ] Command history and favorites
-- [ ] Export reports to markdown/PDF
-- [ ] Integration with popular CI/CD platforms
-- [ ] Multi-language support
-- [ ] Cloud provider-specific guidance
-- [ ] Terraform/OpenTofu module browser
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and formatting
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Rich](https://github.com/Textualize/rich) for beautiful terminal output
-- Inspired by the need to make Infrastructure as Code more accessible to beginners
-- Thanks to the Terraform and OpenTofu communities
-
-## 📞 Support
-
-- 📫 **Issues**: [GitHub Issues](https://github.com/iamtejas23/infra-guide/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/iamtejas23/infra-guide/discussions)
-- 📖 **Documentation**: [GitHub Wiki](https://github.com/iamtejas23/infra-guide/wiki)
-
-## ⭐ Star History
-
-If you find this project useful, please consider giving it a star on GitHub!
-
----
-
-**Made with ❤️ for the Infrastructure as Code community**

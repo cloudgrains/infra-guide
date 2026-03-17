@@ -11,6 +11,7 @@ def get_guide() -> dict:
         dict: Guide data with description, flags, best practices, and warnings
     """
     return {
+        "risk": "low",
         "description": (
             "The 'init' command initializes a working directory containing Terraform/OpenTofu "
             "configuration files. This is the first command that should be run after writing a "
@@ -43,6 +44,11 @@ def get_guide() -> dict:
                 "flag": "-lock=false",
                 "description": "Don't hold a state lock during backend migration"
             }
+        ],
+        "examples": [
+            "infra-guide init",
+            "infra-guide init --upgrade",
+            "infra-guide init -- --backend-config=env/dev.backend.hcl",
         ],
         "best_practices": [
             "Always run 'init' when you first clone a repository or after adding new provider requirements",
