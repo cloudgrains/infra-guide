@@ -2,24 +2,27 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
 
 `infra-guide` is a product-style CLI and interactive command center for Terraform and OpenTofu. It blends guide-first workflows, direct subcommands, workspace diagnostics, and automation-friendly commands so the tool works for both learning and day-to-day operations.
 
 ## Features
 
 - Real CLI surface with working `--help`, subcommands, and passthrough args
-- Interactive dashboard with readiness, backend, lock file, workspace, and state signals
+- Interactive themed dashboard with readiness, backend, lock file, workspace, state, recent commands, and favorites
 - `doctor` mode for project health checks and actionable recommendations
+- Persistent theme customization with `aurora`, `sunset`, `forest`, and `mono`
+- Command history and favorites with rerun support inside the TUI
+- Pre-apply cost insight that analyzes a saved plan when available and clearly says when exact pricing cannot be predicted safely
 - Guide mode for `init`, `plan`, `apply`, and `destroy`
-- Direct support for `init`, `plan`, `apply`, `destroy`, `fmt`, `state`, `workspace`, and `cicd`
+- Direct support for `history`, `theme`, `init`, `plan`, `apply`, `destroy`, `fmt`, `state`, `workspace`, and `cicd`
 - Drift detection, validation, state exploration, and workspace management
 - Local-only execution with no telemetry and no cloud credentials required
 
 ## Demo
 
 ```text
-infra-guide  Command Center  v0.3.0
+infra-guide  Command Center  v0.4.0
 Tool: tofu (OpenTofu v1.11.5)
 Workspace: default
 Directory: ./envs/dev
@@ -33,8 +36,10 @@ Command Palette
 1  doctor     Workspace health check with guidance   LOW
 2  init       Initialize providers and backend       LOW
 3  plan       Preview infrastructure changes         LOW
-4  apply      Apply changes to infrastructure        MEDIUM
+4  apply      Apply changes with cost insight        MEDIUM
 5  destroy    Remove managed infrastructure          HIGH
+10 history    Rerun recent or favorite commands      LOW
+11 theme      Switch the interface theme             LOW
 ```
 
 ## Installation
@@ -70,6 +75,8 @@ infra-guide
 ```bash
 infra-guide status
 infra-guide doctor --with-drift
+infra-guide history --favorites
+infra-guide theme --set sunset
 infra-guide guide plan
 infra-guide init --upgrade
 infra-guide plan --out tfplan
@@ -100,6 +107,8 @@ infra-guide destroy -- --target=aws_instance.temporary
 | `status` | Show a fast workspace summary | Low |
 | `doctor` | Run health diagnostics and recommendations | Low |
 | `guide <command>` | Show best practices and examples for a command | Low |
+| `history` | Show recent commands and favorites | Low |
+| `theme` | Show or change the active TUI theme | Low |
 | `init` | Initialize providers, modules, and backend | Low |
 | `plan` | Preview infrastructure changes | Low |
 | `apply` | Create or update infrastructure | Medium |
@@ -122,6 +131,26 @@ infra-guide doctor --with-drift
 ```
 
 `status` is lightweight. `doctor` adds validation and exits non-zero when critical checks fail.
+
+### Themes, history, and favorites
+
+```bash
+infra-guide theme --list
+infra-guide theme --set forest
+infra-guide history
+infra-guide history --favorites
+```
+
+The TUI also exposes theme switching, favorite toggling, and rerun flows directly from the interactive dashboard.
+
+### Apply cost insight
+
+```bash
+infra-guide plan --out tfplan
+infra-guide apply --plan-file tfplan --yes
+```
+
+Before `apply`, infra-guide now shows a cost-impact panel. It uses the saved plan when possible, but it intentionally avoids claiming exact AWS pricing unless live pricing context exists.
 
 ### State explorer
 

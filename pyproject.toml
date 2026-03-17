@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "infra-guide"
-version = "0.3.0"
+version = "0.4.0"
 description = "An interactive TUI for Terraform and OpenTofu beginners with enterprise-grade features"
 readme = "README.md"
 authors = [
@@ -70,9 +70,6 @@ infra-guide = "infra_guide.cli:main"
 where = ["."]
 include = ["infra_guide*"]
 exclude = ["tests*"]
-
-[tool.setuptools.package-data]
-infra_guide = ["py.typed"]
 
 [tool.black]
 line-length = 100

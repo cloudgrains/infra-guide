@@ -11,9 +11,11 @@ from rich.prompt import Confirm, Prompt
 
 from infra_guide import __version__
 from infra_guide.cicd import CICDRunner
+from infra_guide.cost_estimator import CostEstimator
 from infra_guide.detector import ToolDetector
 from infra_guide.drift_detector import DriftDetector
 from infra_guide.guides import apply, destroy, init, plan
+from infra_guide.preferences import DEFAULT_THEME, THEMES, PreferencesStore
 from infra_guide.project_inspector import ProjectInspector
 from infra_guide.runner import CommandRunner
 from infra_guide.state_explorer import StateExplorer
@@ -31,6 +33,8 @@ GUIDE_MODULES = {
 
 RISK_BY_COMMAND = {
     "doctor": "low",
+    "history": "low",
+    "theme": "low",
     "init": "low",
     "plan": "low",
     "apply": "medium",
@@ -54,10 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  infra-guide\n"
             "  infra-guide doctor --with-drift\n"
-            "  infra-guide guide plan\n"
+            "  infra-guide theme --set sunset\n"
+            "  infra-guide history --favorites\n"
             "  infra-guide plan --out tfplan\n"
             "  infra-guide apply --plan-file tfplan --yes\n"
-            "  infra-guide workspace --select staging\n"
             "  infra-guide plan -- --target=module.network"
         ),
     )
@@ -76,6 +80,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="disable ANSI styling in infra-guide output",
     )
     parser.add_argument(
+        "--theme",
+        choices=sorted(THEMES.keys()),
+        help="preview a theme for this session without saving it",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
@@ -84,7 +93,6 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser("interactive", help="launch the interactive command center")
-
     subparsers.add_parser("status", help="show a fast workspace summary")
 
     doctor_parser = subparsers.add_parser(
@@ -102,6 +110,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="show guidance and best practices for a command",
     )
     guide_parser.add_argument("guide_command", choices=sorted(GUIDE_MODULES.keys()))
+
+    history_parser = subparsers.add_parser(
+        "history",
+        help="show recent commands and favorites",
+    )
+    history_parser.add_argument(
+        "--favorites",
+        action="store_true",
+        help="show favorites only",
+    )
+    history_parser.add_argument(
+        "--clear",
+        action="store_true",
+        help="clear command history",
+    )
+
+    theme_parser = subparsers.add_parser(
+        "theme",
+        help="show or change the active TUI theme",
+    )
+    theme_parser.add_argument(
+        "--list",
+        action="store_true",
+        help="list available themes",
+    )
+    theme_parser.add_argument(
+        "--set",
+        dest="set_theme_name",
+        choices=sorted(THEMES.keys()),
+        help="persist a theme for future runs",
+    )
 
     subparsers.add_parser("validate", help="run pre-flight validation checks")
     subparsers.add_parser("drift", help="detect infrastructure drift")
@@ -341,14 +380,25 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"ERROR: could not change directory to '{args.cwd}': {error}", file=sys.stderr)
             return 2
 
+    preferences = PreferencesStore()
+    chosen_theme = (
+        args.theme
+        or getattr(args, "set_theme_name", None)
+        or preferences.get_theme_name()
+    )
+
     tool = args.tool or ToolDetector.detect()
     if tool is None:
-        temp_ui = InfraGuideUI("none", "none", no_color=args.no_color)
-        temp_ui.show_no_tool_error()
-        return 1
+        if args.command in (None, "interactive", "status", "doctor", "guide", "validate", "drift", "state", "workspace", "fmt", "cicd", "init", "plan", "apply", "destroy"):
+            temp_ui = InfraGuideUI("none", "none", no_color=args.no_color, theme_name=chosen_theme)
+            temp_ui.show_no_tool_error()
+            return 1
+        tool = "terraform"
+        tool_version = "not detected"
+    else:
+        tool_version = ToolDetector.get_version(tool)
 
-    tool_version = ToolDetector.get_version(tool)
-    ui = InfraGuideUI(tool, tool_version, no_color=args.no_color)
+    ui = InfraGuideUI(tool, tool_version, no_color=args.no_color, theme_name=chosen_theme)
 
     services = {
         "runner": CommandRunner(tool),
@@ -358,6 +408,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "validator": PreFlightValidator(tool),
         "cicd_runner": CICDRunner(tool),
         "inspector": ProjectInspector(tool),
+        "preferences": preferences,
+        "cost_estimator": CostEstimator(tool),
     }
 
     if args.command in (None, "interactive"):
@@ -389,6 +441,12 @@ def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[
     if args.command == "guide":
         return show_guide_command(ui, services["inspector"], args.guide_command)
 
+    if args.command == "history":
+        return run_history_command(args, ui, services["preferences"])
+
+    if args.command == "theme":
+        return run_theme_command(args, ui, services["preferences"])
+
     if args.command == "validate":
         results = services["validator"].run_all_checks()
         services["validator"].show_validation_report(results)
@@ -415,6 +473,8 @@ def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[
             ui=ui,
             runner=services["runner"],
             inspector=services["inspector"],
+            preferences=services["preferences"],
+            cost_estimator=services["cost_estimator"],
         )
 
     if args.command == "cicd":
@@ -432,6 +492,8 @@ def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[
             ui=ui,
             runner=services["runner"],
             inspector=services["inspector"],
+            preferences=services["preferences"],
+            cost_estimator=services["cost_estimator"],
             require_confirmation=args.command in ("apply", "destroy"),
             auto_confirm=getattr(args, "yes", False),
             detailed_exitcode=getattr(args, "detailed_exitcode", False),
@@ -446,7 +508,11 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
     while True:
         snapshot = services["inspector"].inspect(include_state=False)
         ui.clear_screen()
-        ui.show_dashboard(snapshot)
+        ui.show_dashboard(
+            snapshot,
+            history_entries=services["preferences"].get_history(limit=6),
+            favorites=services["preferences"].get_favorites(),
+        )
 
         choice = ui.show_menu()
 
@@ -467,6 +533,8 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
                 ui,
                 services["runner"],
                 services["inspector"],
+                services["preferences"],
+                services["cost_estimator"],
             )
         elif choice == "3":
             run_guided_command(
@@ -474,6 +542,8 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
                 ui,
                 services["runner"],
                 services["inspector"],
+                services["preferences"],
+                services["cost_estimator"],
             )
         elif choice == "4":
             run_guided_command(
@@ -481,6 +551,8 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
                 ui,
                 services["runner"],
                 services["inspector"],
+                services["preferences"],
+                services["cost_estimator"],
             )
         elif choice == "5":
             run_guided_command(
@@ -488,6 +560,8 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
                 ui,
                 services["runner"],
                 services["inspector"],
+                services["preferences"],
+                services["cost_estimator"],
             )
         elif choice == "6":
             ui.clear_screen()
@@ -507,8 +581,24 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
         elif choice == "9":
             services["workspace_manager"].show_workspace_menu()
         elif choice == "10":
-            handle_fmt_menu(ui, services["runner"], services["inspector"])
+            handle_history_menu(
+                ui,
+                services["preferences"],
+                services["runner"],
+                services["inspector"],
+                services["cost_estimator"],
+            )
         elif choice == "11":
+            handle_theme_menu(ui, services["preferences"], services["inspector"])
+        elif choice == "12":
+            handle_fmt_menu(
+                ui,
+                services["runner"],
+                services["inspector"],
+                services["preferences"],
+                services["cost_estimator"],
+            )
+        elif choice == "13":
             handle_cicd_menu(ui, services["cicd_runner"], services["inspector"])
         elif choice == "0":
             ui.clear_screen()
@@ -540,6 +630,8 @@ def run_guided_command(
     ui: InfraGuideUI,
     runner: CommandRunner,
     inspector: ProjectInspector,
+    preferences: PreferencesStore,
+    cost_estimator: CostEstimator,
 ):
     """Run an interactive guide-first command flow."""
     guide_data = GUIDE_MODULES[command_name].get_guide()
@@ -559,10 +651,22 @@ def run_guided_command(
 
     extra_args = ui.prompt_for_extra_args()
     preview = runner.format_command(command_name, extra_args)
+    is_favorite = preferences.is_favorite(command_name, extra_args)
     ui.show_command_preview(
         preview,
         risk_level=guide_data.get("risk", RISK_BY_COMMAND.get(command_name, "low")),
+        is_favorite=is_favorite,
     )
+
+    if ui.prompt_favorite_action(is_favorite):
+        enabled = preferences.toggle_favorite(command_name, extra_args, preview)
+        if enabled:
+            ui.show_success("Command added to favorites.")
+        else:
+            ui.show_info("Command removed from favorites.")
+
+    if command_name == "apply":
+        ui.show_cost_preview(cost_estimator.estimate_apply_cost(extra_args))
 
     if ui.confirm_execution(
         preview,
@@ -570,7 +674,8 @@ def run_guided_command(
     ):
         ui.show_command_output_header(preview)
         return_code = runner.execute(command_name, extra_args)
-        summarize_command_result(ui, command_name, return_code)
+        preferences.record_execution(command_name, extra_args, preview, os.getcwd(), return_code)
+        summarize_command_result(ui, command_name, return_code, detailed_exitcode=_uses_detailed_exitcode(command_name, extra_args))
     else:
         ui.show_info("Command cancelled.")
 
@@ -583,6 +688,8 @@ def execute_direct_command(
     ui: InfraGuideUI,
     runner: CommandRunner,
     inspector: ProjectInspector,
+    preferences: PreferencesStore,
+    cost_estimator: CostEstimator,
     require_confirmation: bool = False,
     auto_confirm: bool = False,
     detailed_exitcode: bool = False,
@@ -594,7 +701,14 @@ def execute_direct_command(
 
     preview = runner.format_command(command_name, command_args)
     risk_level = RISK_BY_COMMAND.get(command_name, "low")
-    ui.show_command_preview(preview, risk_level=risk_level)
+    ui.show_command_preview(
+        preview,
+        risk_level=risk_level,
+        is_favorite=preferences.is_favorite(command_name, command_args),
+    )
+
+    if command_name == "apply":
+        ui.show_cost_preview(cost_estimator.estimate_apply_cost(command_args))
 
     if require_confirmation:
         if not auto_confirm and not sys.stdin.isatty():
@@ -613,6 +727,7 @@ def execute_direct_command(
 
     ui.show_command_output_header(preview)
     return_code = runner.execute(command_name, command_args)
+    preferences.record_execution(command_name, command_args, preview, os.getcwd(), return_code)
     summarize_command_result(ui, command_name, return_code, detailed_exitcode=detailed_exitcode)
     return return_code
 
@@ -727,6 +842,39 @@ def run_workspace_command(
     return 0
 
 
+def run_history_command(
+    args: argparse.Namespace, ui: InfraGuideUI, preferences: PreferencesStore
+) -> int:
+    """Run direct history commands."""
+    if args.clear:
+        preferences.clear_history()
+        ui.show_success("Command history cleared.")
+        return 0
+
+    ui.show_banner(title="History")
+    if args.favorites:
+        ui.show_history_center([], preferences.get_favorites())
+    else:
+        ui.show_history_center(preferences.get_history(limit=12), preferences.get_favorites())
+    return 0
+
+
+def run_theme_command(
+    args: argparse.Namespace, ui: InfraGuideUI, preferences: PreferencesStore
+) -> int:
+    """Run direct theme commands."""
+    if args.set_theme_name:
+        preferences.set_theme(args.set_theme_name)
+        ui.set_theme(args.set_theme_name)
+        ui.show_success(f"Theme set to {args.set_theme_name}.")
+
+    ui.show_banner(title="Themes")
+    ui.show_theme_gallery(preferences.get_theme_name())
+    if not args.list and not args.set_theme_name:
+        ui.show_info(f"Current theme: {preferences.get_theme_name()}")
+    return 0
+
+
 def handle_state_menu(
     ui: InfraGuideUI, state_explorer: StateExplorer, inspector: ProjectInspector
 ):
@@ -766,7 +914,13 @@ def handle_state_menu(
             break
 
 
-def handle_fmt_menu(ui: InfraGuideUI, runner: CommandRunner, inspector: ProjectInspector):
+def handle_fmt_menu(
+    ui: InfraGuideUI,
+    runner: CommandRunner,
+    inspector: ProjectInspector,
+    preferences: PreferencesStore,
+    cost_estimator: CostEstimator,
+):
     """Interactive formatter flow."""
     ui.clear_screen()
     snapshot = inspector.inspect(include_state=False)
@@ -777,11 +931,16 @@ def handle_fmt_menu(ui: InfraGuideUI, runner: CommandRunner, inspector: ProjectI
     extra_args = ui.prompt_for_extra_args()
     command_args = ["-recursive"] + extra_args
     preview = runner.format_command("fmt", command_args)
-    ui.show_command_preview(preview, risk_level="low")
+    ui.show_command_preview(
+        preview,
+        risk_level="low",
+        is_favorite=preferences.is_favorite("fmt", command_args),
+    )
 
     if ui.confirm_execution(preview, risk_level="low"):
         ui.show_command_output_header(preview)
         return_code = runner.execute("fmt", command_args)
+        preferences.record_execution("fmt", command_args, preview, os.getcwd(), return_code)
         summarize_command_result(ui, "fmt", return_code)
     else:
         ui.show_info("Formatting cancelled.")
@@ -807,6 +966,128 @@ def handle_cicd_menu(ui: InfraGuideUI, cicd_runner: CICDRunner, inspector: Proje
         ui.show_info("Pipeline cancelled.")
 
     ui.wait_for_enter()
+
+
+def handle_history_menu(
+    ui: InfraGuideUI,
+    preferences: PreferencesStore,
+    runner: CommandRunner,
+    inspector: ProjectInspector,
+    cost_estimator: CostEstimator,
+):
+    """Interactive history and favorites center."""
+    while True:
+        ui.clear_screen()
+        ui.show_banner(snapshot=inspector.inspect(include_state=False), title="History & Favorites")
+        ui.show_history_center(preferences.get_history(limit=10), preferences.get_favorites())
+
+        ui.console.print("1. Rerun recent command")
+        ui.console.print("2. Toggle favorite from recent command")
+        ui.console.print("3. Run favorite")
+        ui.console.print("4. Remove favorite")
+        ui.console.print("5. Clear history")
+        ui.console.print("6. Back to main menu\n")
+
+        choice = Prompt.ask(
+            "[cyan]Select option[/cyan]",
+            choices=["1", "2", "3", "4", "5", "6"],
+            default="6",
+        )
+
+        if choice == "1":
+            history_entries = preferences.get_history(limit=10)
+            entry = _select_saved_entry(history_entries, "recent command")
+            if entry:
+                execute_direct_command(
+                    command_name=entry["command_name"],
+                    command_args=list(entry.get("args", [])),
+                    ui=ui,
+                    runner=runner,
+                    inspector=inspector,
+                    preferences=preferences,
+                    cost_estimator=cost_estimator,
+                    require_confirmation=entry["command_name"] in ("apply", "destroy"),
+                    detailed_exitcode=_uses_detailed_exitcode(entry["command_name"], list(entry.get("args", []))),
+                )
+                ui.wait_for_enter()
+        elif choice == "2":
+            history_entries = preferences.get_history(limit=10)
+            entry = _select_saved_entry(history_entries, "recent command")
+            if entry:
+                enabled = preferences.toggle_favorite(
+                    entry["command_name"],
+                    list(entry.get("args", [])),
+                    entry.get("label", entry["command_name"]),
+                )
+                if enabled:
+                    ui.show_success("Command added to favorites.")
+                else:
+                    ui.show_info("Command removed from favorites.")
+                ui.wait_for_enter()
+        elif choice == "3":
+            favorites = preferences.get_favorites()
+            entry = _select_saved_entry(favorites, "favorite")
+            if entry:
+                execute_direct_command(
+                    command_name=entry["command_name"],
+                    command_args=list(entry.get("args", [])),
+                    ui=ui,
+                    runner=runner,
+                    inspector=inspector,
+                    preferences=preferences,
+                    cost_estimator=cost_estimator,
+                    require_confirmation=entry["command_name"] in ("apply", "destroy"),
+                    detailed_exitcode=_uses_detailed_exitcode(entry["command_name"], list(entry.get("args", []))),
+                )
+                ui.wait_for_enter()
+        elif choice == "4":
+            favorites = preferences.get_favorites()
+            entry = _select_saved_entry(favorites, "favorite")
+            if entry:
+                if preferences.remove_favorite(entry["key"]):
+                    ui.show_success("Favorite removed.")
+                else:
+                    ui.show_error("Could not remove favorite.")
+                ui.wait_for_enter()
+        elif choice == "5":
+            if Confirm.ask("[yellow]Clear command history?[/yellow]", default=False):
+                preferences.clear_history()
+                ui.show_success("Command history cleared.")
+            else:
+                ui.show_info("History clear cancelled.")
+            ui.wait_for_enter()
+        elif choice == "6":
+            break
+
+
+def handle_theme_menu(
+    ui: InfraGuideUI,
+    preferences: PreferencesStore,
+    inspector: ProjectInspector,
+):
+    """Interactive theme customization center."""
+    while True:
+        ui.clear_screen()
+        ui.show_banner(snapshot=inspector.inspect(include_state=False), title="Theme Studio")
+        ui.show_theme_gallery(preferences.get_theme_name())
+
+        theme_choices = list(sorted(THEMES.keys())) + ["back"]
+        ui.console.print(
+            f"Active theme: [bold]{preferences.get_theme_name()}[/bold]\n"
+        )
+        selected = Prompt.ask(
+            "[cyan]Choose a theme or back[/cyan]",
+            choices=theme_choices,
+            default="back",
+        )
+
+        if selected == "back":
+            break
+
+        preferences.set_theme(selected)
+        ui.set_theme(selected)
+        ui.show_success(f"Theme changed to {selected}.")
+        ui.wait_for_enter()
 
 
 def build_command_args(command_name: str, args: argparse.Namespace) -> List[str]:
@@ -916,6 +1197,28 @@ def clean_passthrough_args(extra_args: List[str]) -> List[str]:
     if passthrough and passthrough[0] == "--":
         passthrough = passthrough[1:]
     return passthrough
+
+
+def _select_saved_entry(entries: List[Dict[str, Any]], label: str) -> Optional[Dict[str, Any]]:
+    if not entries:
+        return None
+
+    for index, entry in enumerate(entries, 1):
+        print(f"{index}. {entry.get('label', entry.get('command_name', 'command'))}")
+
+    raw_value = Prompt.ask(f"[cyan]Select {label} number[/cyan]", default="")
+    if not raw_value.isdigit():
+        return None
+
+    selected_index = int(raw_value)
+    if selected_index < 1 or selected_index > len(entries):
+        return None
+
+    return entries[selected_index - 1]
+
+
+def _uses_detailed_exitcode(command_name: str, args: List[str]) -> bool:
+    return command_name == "plan" and "-detailed-exitcode" in args
 
 
 if __name__ == "__main__":
