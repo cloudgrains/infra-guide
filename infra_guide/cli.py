@@ -21,6 +21,7 @@ from infra_guide.runner import CommandRunner
 from infra_guide.state_explorer import StateExplorer
 from infra_guide.ui import InfraGuideUI
 from infra_guide.validators import PreFlightValidator
+from infra_guide.web import WebCommandCenter
 from infra_guide.workspace_manager import WorkspaceManager
 
 
@@ -60,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  infra-guide doctor --with-drift\n"
             "  infra-guide theme --set sunset\n"
             "  infra-guide history --favorites\n"
+            "  infra-guide web --port 9000\n"
             "  infra-guide plan --out tfplan\n"
             "  infra-guide apply --plan-file tfplan --yes\n"
             "  infra-guide plan -- --target=module.network"
@@ -140,6 +142,27 @@ def build_parser() -> argparse.ArgumentParser:
         dest="set_theme_name",
         choices=sorted(THEMES.keys()),
         help="persist a theme for future runs",
+    )
+
+    web_parser = subparsers.add_parser(
+        "web",
+        help="launch the local browser command center",
+    )
+    web_parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="bind the web UI to a host (default: 127.0.0.1)",
+    )
+    web_parser.add_argument(
+        "--port",
+        type=int,
+        default=8765,
+        help="bind the web UI to a port (default: 8765, use 0 for auto)",
+    )
+    web_parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="start the server without opening a browser tab",
     )
 
     subparsers.add_parser("validate", help="run pre-flight validation checks")
@@ -389,7 +412,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     tool = args.tool or ToolDetector.detect()
     if tool is None:
-        if args.command in (None, "interactive", "status", "doctor", "guide", "validate", "drift", "state", "workspace", "fmt", "cicd", "init", "plan", "apply", "destroy"):
+        if args.command in (None, "interactive", "status", "doctor", "guide", "web", "validate", "drift", "state", "workspace", "fmt", "cicd", "init", "plan", "apply", "destroy"):
             temp_ui = InfraGuideUI("none", "none", no_color=args.no_color, theme_name=chosen_theme)
             temp_ui.show_no_tool_error()
             return 1
@@ -447,6 +470,15 @@ def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[
 
     if args.command == "theme":
         return run_theme_command(args, ui, services["preferences"])
+
+    if args.command == "web":
+        return run_web_command(
+            args,
+            services,
+            tool_name=ui.tool_name,
+            tool_version=ui.tool_version,
+            theme_name=ui.theme_name,
+        )
 
     if args.command == "validate":
         results = services["validator"].run_all_checks()
@@ -601,6 +633,19 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
             )
         elif choice == "13":
             handle_cicd_menu(ui, services["cicd_runner"], services["inspector"])
+        elif choice == "14":
+            ui.clear_screen()
+            ui.show_banner(snapshot=services["inspector"].inspect(include_state=False), title="Web Command Center")
+            ui.show_info("Launching the local web UI on an available localhost port. Press Ctrl+C there to return.")
+            run_web_launcher(
+                tool_name=ui.tool_name,
+                tool_version=ui.tool_version,
+                services=services,
+                theme_name=ui.theme_name,
+                host="127.0.0.1",
+                port=0,
+                open_browser=True,
+            )
         elif choice == "0":
             ui.clear_screen()
             ui.show_goodbye()
@@ -874,6 +919,47 @@ def run_theme_command(
     if not args.list and not args.set_theme_name:
         ui.show_info(f"Current theme: {preferences.get_theme_name()}")
     return 0
+
+
+def run_web_command(
+    args: argparse.Namespace,
+    services: Dict[str, Any],
+    tool_name: str,
+    tool_version: str,
+    theme_name: str,
+) -> int:
+    """Launch the local web command center."""
+    return run_web_launcher(
+        tool_name=tool_name,
+        tool_version=tool_version,
+        services=services,
+        theme_name=theme_name,
+        host=args.host,
+        port=args.port,
+        open_browser=not args.no_browser,
+    )
+
+
+def run_web_launcher(
+    tool_name: str,
+    tool_version: str,
+    services: Dict[str, Any],
+    theme_name: str,
+    host: str,
+    port: int,
+    open_browser: bool,
+) -> int:
+    """Start the web UI server."""
+    web_app = WebCommandCenter(
+        tool_name=tool_name,
+        tool_version=tool_version,
+        services=services,
+        host=host,
+        port=port,
+        open_browser=open_browser,
+        theme_name=theme_name,
+    )
+    return web_app.serve()
 
 
 def handle_state_menu(

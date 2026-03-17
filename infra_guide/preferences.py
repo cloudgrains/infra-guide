@@ -25,6 +25,20 @@ THEMES: Dict[str, Dict[str, str]] = {
         "danger": "bright_red",
         "info": "bright_cyan",
         "chip_bg": "grey23",
+        "web_bg": "#06131d",
+        "web_bg_alt": "#0a1826",
+        "web_surface": "#102438",
+        "web_surface_alt": "#15314a",
+        "web_border": "#1e7db4",
+        "web_text": "#f4fbff",
+        "web_muted": "#8ea8b6",
+        "web_brand": "#35d9ff",
+        "web_accent": "#00c2ff",
+        "web_accent_alt": "#ff61d2",
+        "web_success": "#22c55e",
+        "web_warning": "#f59e0b",
+        "web_danger": "#ef4444",
+        "web_chip_bg": "#163042",
     },
     "sunset": {
         "label": "Sunset",
@@ -41,6 +55,20 @@ THEMES: Dict[str, Dict[str, str]] = {
         "danger": "bright_red",
         "info": "bright_yellow",
         "chip_bg": "grey19",
+        "web_bg": "#1a0f0a",
+        "web_bg_alt": "#24140d",
+        "web_surface": "#331c14",
+        "web_surface_alt": "#472418",
+        "web_border": "#a45d2f",
+        "web_text": "#fff8f3",
+        "web_muted": "#d3b8aa",
+        "web_brand": "#ffbf47",
+        "web_accent": "#ff9f43",
+        "web_accent_alt": "#ff6f61",
+        "web_success": "#34d399",
+        "web_warning": "#fbbf24",
+        "web_danger": "#f87171",
+        "web_chip_bg": "#523122",
     },
     "forest": {
         "label": "Forest",
@@ -57,6 +85,20 @@ THEMES: Dict[str, Dict[str, str]] = {
         "danger": "bright_red",
         "info": "cyan",
         "chip_bg": "grey19",
+        "web_bg": "#081610",
+        "web_bg_alt": "#0d1f17",
+        "web_surface": "#132c20",
+        "web_surface_alt": "#19402b",
+        "web_border": "#2b7c4e",
+        "web_text": "#f3fff8",
+        "web_muted": "#a0b8ad",
+        "web_brand": "#4ade80",
+        "web_accent": "#22c55e",
+        "web_accent_alt": "#2dd4bf",
+        "web_success": "#4ade80",
+        "web_warning": "#facc15",
+        "web_danger": "#f87171",
+        "web_chip_bg": "#1d3b2a",
     },
     "mono": {
         "label": "Mono",
@@ -73,6 +115,20 @@ THEMES: Dict[str, Dict[str, str]] = {
         "danger": "grey93",
         "info": "grey85",
         "chip_bg": "grey19",
+        "web_bg": "#0d0d0d",
+        "web_bg_alt": "#121212",
+        "web_surface": "#1b1b1b",
+        "web_surface_alt": "#252525",
+        "web_border": "#5f5f5f",
+        "web_text": "#f5f5f5",
+        "web_muted": "#b2b2b2",
+        "web_brand": "#ffffff",
+        "web_accent": "#e5e5e5",
+        "web_accent_alt": "#bdbdbd",
+        "web_success": "#fafafa",
+        "web_warning": "#d4d4d4",
+        "web_danger": "#ffffff",
+        "web_chip_bg": "#2d2d2d",
     },
 }
 
@@ -90,6 +146,27 @@ def get_theme_palette(theme_name: Optional[str]) -> Dict[str, str]:
     if theme_name in THEMES:
         return THEMES[theme_name]
     return THEMES[DEFAULT_THEME]
+
+
+def get_web_theme_palette(theme_name: Optional[str]) -> Dict[str, str]:
+    """Return CSS-friendly colors for the requested theme."""
+    palette = get_theme_palette(theme_name)
+    return {
+        "bg": palette["web_bg"],
+        "bg_alt": palette["web_bg_alt"],
+        "surface": palette["web_surface"],
+        "surface_alt": palette["web_surface_alt"],
+        "border": palette["web_border"],
+        "text": palette["web_text"],
+        "muted": palette["web_muted"],
+        "brand": palette["web_brand"],
+        "accent": palette["web_accent"],
+        "accent_alt": palette["web_accent_alt"],
+        "success": palette["web_success"],
+        "warning": palette["web_warning"],
+        "danger": palette["web_danger"],
+        "chip_bg": palette["web_chip_bg"],
+    }
 
 
 class PreferencesStore:

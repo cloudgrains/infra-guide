@@ -1,6 +1,11 @@
 from argparse import Namespace
 
-from infra_guide.cli import build_command_args, build_fmt_args, clean_passthrough_args
+from infra_guide.cli import (
+    build_command_args,
+    build_fmt_args,
+    build_parser,
+    clean_passthrough_args,
+)
 
 
 def test_clean_passthrough_args_removes_separator():
@@ -43,3 +48,13 @@ def test_build_fmt_args_defaults_to_recursive():
     )
 
     assert build_fmt_args(args) == ["-recursive"]
+
+
+def test_web_parser_supports_custom_port_and_no_browser():
+    parser = build_parser()
+
+    args = parser.parse_args(["web", "--port", "9000", "--no-browser"])
+
+    assert args.command == "web"
+    assert args.port == 9000
+    assert args.no_browser is True

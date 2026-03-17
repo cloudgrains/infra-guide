@@ -273,3 +273,62 @@ class CICDRunner:
 
         self.console.print("[bold green]✓ Pipeline completed successfully[/bold green]")
         return True
+
+    def run_pipeline_capture(
+        self,
+        skip_init: bool = False,
+        skip_validation: bool = False,
+        output_file: str = "tfplan",
+    ) -> Dict[str, Any]:
+        """
+        Run the CI/CD pipeline without printing and return structured step results.
+
+        Args:
+            skip_init: Skip initialization step
+            skip_validation: Skip validation checks
+            output_file: Saved plan filename
+
+        Returns:
+            Dict with overall status and step details
+        """
+        steps = []
+
+        if not skip_init:
+            init_result = self.run_command("init")
+            steps.append(
+                {
+                    "name": "init",
+                    "success": init_result["success"],
+                    "details": init_result,
+                }
+            )
+            if not init_result["success"]:
+                return {"success": False, "steps": steps}
+
+        if not skip_validation:
+            validation_result = self.validate_pipeline()
+            steps.append(
+                {
+                    "name": "validate",
+                    "success": validation_result["all_passed"],
+                    "details": validation_result,
+                }
+            )
+            if not validation_result["all_passed"]:
+                return {"success": False, "steps": steps}
+
+        plan_result = self.plan_with_output(output_file=output_file)
+        steps.append(
+            {
+                "name": "plan",
+                "success": plan_result["success"],
+                "details": plan_result,
+            }
+        )
+
+        return {
+            "success": plan_result["success"],
+            "steps": steps,
+            "plan_file": output_file,
+            "has_changes": plan_result.get("has_changes", False),
+        }

@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
 
 `infra-guide` is a product-style CLI and interactive command center for Terraform and OpenTofu. It blends guide-first workflows, direct subcommands, workspace diagnostics, and automation-friendly commands so the tool works for both learning and day-to-day operations.
 
@@ -14,6 +14,7 @@
 
 - Real CLI surface with working `--help`, subcommands, and passthrough args
 - Interactive themed dashboard with readiness, backend, lock file, workspace, state, recent commands, and favorites
+- Local web command center with a browser dashboard on `localhost` for teams who want TUI workflows in a cleaner UI
 - `doctor` mode for project health checks and actionable recommendations
 - Persistent theme customization with `aurora`, `sunset`, `forest`, and `mono`
 - Command history and favorites with rerun support inside the TUI
@@ -26,7 +27,7 @@
 ## Demo
 
 ```text
-infra-guide  Command Center  v0.5.0
+infra-guide  Command Center  v0.6.0
 Tool: tofu (OpenTofu v1.11.5)
 Workspace: default
 Directory: ./envs/dev
@@ -81,6 +82,7 @@ infra-guide status
 infra-guide doctor --with-drift
 infra-guide history --favorites
 infra-guide theme --set sunset
+infra-guide web
 infra-guide guide plan
 infra-guide init --upgrade
 infra-guide plan --out tfplan
@@ -113,6 +115,7 @@ infra-guide destroy -- --target=aws_instance.temporary
 | `guide <command>` | Show best practices and examples for a command | Low |
 | `history` | Show recent commands and favorites | Low |
 | `theme` | Show or change the active TUI theme | Low |
+| `web` | Launch the local browser command center on localhost | Low |
 | `init` | Initialize providers, modules, and backend | Low |
 | `plan` | Preview infrastructure changes | Low |
 | `apply` | Create or update infrastructure | Medium |
@@ -146,6 +149,16 @@ infra-guide history --favorites
 ```
 
 The TUI also exposes theme switching, favorite toggling, and rerun flows directly from the interactive dashboard.
+
+### Web command center
+
+```bash
+infra-guide web
+infra-guide web --port 9000
+infra-guide web --no-browser
+```
+
+`infra-guide web` launches a local browser UI on `localhost` and reuses the same project inspector, history, favorites, theme customization, cost hints, workspace actions, and state explorer data as the TUI.
 
 ### Apply cost insight
 

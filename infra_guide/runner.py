@@ -5,7 +5,8 @@ Command execution module for running terraform/tofu commands.
 import shlex
 import subprocess
 import sys
-from typing import List, Optional
+import time
+from typing import Any, Dict, List, Optional
 
 
 class CommandRunner:
@@ -85,6 +86,56 @@ class CommandRunner:
         except Exception as e:
             print(f"\n\nError executing command: {e}")
             return 1
+
+    def execute_capture(
+        self, command: str, additional_args: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a command and capture stdout/stderr for web or test consumers.
+
+        Args:
+            command: The command to execute
+            additional_args: Additional arguments to pass to the command
+
+        Returns:
+            Dict[str, Any]: Structured execution result
+        """
+        cmd = self.build_command(command, additional_args)
+        started_at = time.time()
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+            )
+            duration_seconds = round(time.time() - started_at, 2)
+            return {
+                "success": result.returncode == 0,
+                "exit_code": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "command": self.format_command(command, additional_args),
+                "duration_seconds": duration_seconds,
+            }
+        except KeyboardInterrupt:
+            return {
+                "success": False,
+                "exit_code": 130,
+                "stdout": "",
+                "stderr": "Command interrupted by user.",
+                "command": self.format_command(command, additional_args),
+                "duration_seconds": round(time.time() - started_at, 2),
+            }
+        except Exception as error:
+            return {
+                "success": False,
+                "exit_code": 1,
+                "stdout": "",
+                "stderr": f"Error executing command: {error}",
+                "command": self.format_command(command, additional_args),
+                "duration_seconds": round(time.time() - started_at, 2),
+            }
 
     def execute_with_flags(self, command: str, flags: dict) -> int:
         """

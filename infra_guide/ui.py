@@ -203,7 +203,7 @@ class InfraGuideUI:
         self.console.print(
             Panel(
                 Text(
-                    "Fresh in this TUI: theme switching, command history, favorites, and pre-apply cost insight.",
+                    "Fresh in this product flow: theme switching, command history, favorites, pre-apply cost insight, and a new localhost web command center.",
                     style=self._muted_style(),
                 ),
                 border_style=self._color("surface_alt"),
@@ -245,6 +245,7 @@ class InfraGuideUI:
             ("11", "theme", "Change the interface theme", "low"),
             ("12", "fmt", "Format Terraform/OpenTofu files", "low"),
             ("13", "cicd", "Run pipeline-friendly init/validate/plan flow", "medium"),
+            ("14", "web", "Launch the localhost browser command center", "low"),
             ("0", "exit", "Close infra-guide", "low"),
         ]
 
@@ -265,7 +266,7 @@ class InfraGuideUI:
 
         return Prompt.ask(
             f"[bold {self._color('accent')}]Select an option[/bold {self._color('accent')}]",
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "0"],
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "0"],
             default="0",
         )
 
