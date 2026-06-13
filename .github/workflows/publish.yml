@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write   # required for PyPI Trusted Publishing (OIDC)
 
 jobs:
   # ── 1. Lint & quick smoke-test ─────────────────────────────────────────────
@@ -89,7 +88,8 @@ jobs:
       - name: Validate distribution metadata
         run: python -m twine check dist/*
 
-      - name: Publish to PyPI (Trusted Publishing)
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          print-hash: true
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: python -m twine upload --non-interactive dist/*
