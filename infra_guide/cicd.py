@@ -4,7 +4,6 @@ CI/CD mode - non-interactive execution for continuous integration pipelines.
 
 import sys
 import subprocess
-import json
 from typing import Dict, Any, List, Optional
 from rich.console import Console
 
@@ -196,10 +195,10 @@ class CICDRunner:
             result: Result dictionary
         """
         if result.get("success"):
-            self.console.print(f"[green]✓[/green] Command succeeded")
+            self.console.print("[green]✓[/green] Command succeeded")
             self.console.print(f"Exit code: {result.get('exit_code', 0)}")
         else:
-            self.console.print(f"[red]✗[/red] Command failed")
+            self.console.print("[red]✗[/red] Command failed")
             self.console.print(f"Exit code: {result.get('exit_code', -1)}")
 
             if result.get("error"):

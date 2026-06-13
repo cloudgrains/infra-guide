@@ -4,7 +4,7 @@ Pre-flight validators - comprehensive checks before executing commands.
 
 import subprocess
 import os
-from typing import Dict, List, Any
+from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel

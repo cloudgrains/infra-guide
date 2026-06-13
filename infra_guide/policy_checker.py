@@ -3,7 +3,6 @@ Policy-as-code checker - validates infrastructure against defined policies.
 """
 
 import json
-import re
 from typing import Dict, List, Any
 from rich.console import Console
 from rich.table import Table

@@ -4,7 +4,7 @@ Drift detection module - detects changes between state and actual infrastructure
 
 import subprocess
 import json
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel

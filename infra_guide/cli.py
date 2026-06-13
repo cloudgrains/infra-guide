@@ -16,7 +16,7 @@ from infra_guide.detector import ToolDetector
 from infra_guide.drift_detector import DriftDetector
 from infra_guide.guides import apply, destroy, init, plan
 from infra_guide.policy_checker import PolicyChecker
-from infra_guide.preferences import DEFAULT_THEME, THEMES, PreferencesStore
+from infra_guide.preferences import THEMES, PreferencesStore
 from infra_guide.project_inspector import ProjectInspector
 from infra_guide.runner import CommandRunner
 from infra_guide.state_explorer import StateExplorer
