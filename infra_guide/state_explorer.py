@@ -35,10 +35,7 @@ class StateExplorer:
         """
         try:
             result = subprocess.run(
-                [self.tool_name, "show", "-json"],
-                capture_output=True,
-                text=True,
-                timeout=30
+                [self.tool_name, "show", "-json"], capture_output=True, text=True, timeout=30
             )
 
             if result.returncode == 0:
@@ -57,20 +54,19 @@ class StateExplorer:
         """
         try:
             result = subprocess.run(
-                [self.tool_name, "state", "list"],
-                capture_output=True,
-                text=True,
-                timeout=30
+                [self.tool_name, "state", "list"], capture_output=True, text=True, timeout=30
             )
 
             if result.returncode == 0:
                 resources = []
-                for line in result.stdout.strip().split('\n'):
+                for line in result.stdout.strip().split("\n"):
                     if line:
-                        resources.append({
-                            "address": line.strip(),
-                            "type": line.split(".")[-2] if "." in line else "unknown"
-                        })
+                        resources.append(
+                            {
+                                "address": line.strip(),
+                                "type": line.split(".")[-2] if "." in line else "unknown",
+                            }
+                        )
                 return resources
             return []
 
@@ -92,7 +88,7 @@ class StateExplorer:
                 [self.tool_name, "state", "show", resource_address],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode == 0:
@@ -127,16 +123,18 @@ class StateExplorer:
     def show_state_overview(self):
         """Display an overview of the state file."""
         self.console.print()
-        
+
         state_data = self.get_state_data()
-        
+
         if not state_data:
-            self.console.print("[bold red]❌ No state file found or failed to read state[/bold red]\n")
+            self.console.print(
+                "[bold red]❌ No state file found or failed to read state[/bold red]\n"
+            )
             return
 
         # Extract summary information
         resources = state_data.get("values", {}).get("root_module", {}).get("resources", [])
-        
+
         # Count resources by type
         type_counts = {}
         for resource in resources:
@@ -149,7 +147,7 @@ class StateExplorer:
             f"[white]Total Resources: {len(resources)}\n"
             f"Resource Types: {len(type_counts)}[/white]",
             border_style="cyan",
-            box=box.ROUNDED
+            box=box.ROUNDED,
         )
         self.console.print(summary)
         self.console.print()
@@ -160,7 +158,7 @@ class StateExplorer:
                 title="Resources by Type",
                 show_header=True,
                 header_style="bold magenta",
-                box=box.ROUNDED
+                box=box.ROUNDED,
             )
             table.add_column("Resource Type", style="cyan", width=40)
             table.add_column("Count", style="green", justify="right", width=10)
@@ -174,9 +172,9 @@ class StateExplorer:
     def show_resources_list(self):
         """Display a list of all resources."""
         self.console.print()
-        
+
         resources = self.list_resources()
-        
+
         if not resources:
             self.console.print("[bold yellow]⚠️  No resources found in state[/bold yellow]\n")
             return
@@ -185,39 +183,35 @@ class StateExplorer:
             title=f"📦 All Resources ({len(resources)})",
             show_header=True,
             header_style="bold cyan",
-            box=box.ROUNDED
+            box=box.ROUNDED,
         )
         table.add_column("#", style="dim", width=5, justify="right")
         table.add_column("Resource Address", style="green", width=60)
         table.add_column("Type", style="blue", width=30)
 
         for idx, resource in enumerate(resources[:50], 1):  # Show first 50
-            table.add_row(
-                str(idx),
-                resource["address"],
-                resource["type"]
-            )
+            table.add_row(str(idx), resource["address"], resource["type"])
 
         self.console.print(table)
-        
+
         if len(resources) > 50:
             self.console.print(f"\n[dim]... and {len(resources) - 50} more resources[/dim]")
-        
+
         self.console.print()
 
     def show_resource_tree(self):
         """Display resources as a tree structure."""
         self.console.print()
-        
+
         resources = self.list_resources()
-        
+
         if not resources:
             self.console.print("[bold yellow]⚠️  No resources found in state[/bold yellow]\n")
             return
 
         # Build tree structure
         tree = Tree("🌳 [bold cyan]Infrastructure State[/bold cyan]")
-        
+
         # Group by resource type
         by_type = {}
         for resource in resources:
@@ -250,10 +244,10 @@ class StateExplorer:
         stats = {
             "total_resources": len(resources),
             "resource_types": len(set(r["type"] for r in resources)),
-            "has_state": state_data is not None
+            "has_state": state_data is not None,
         }
 
         if state_data:
             stats["terraform_version"] = state_data.get("terraform_version", "unknown")
-            
+
         return stats

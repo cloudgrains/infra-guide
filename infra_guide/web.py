@@ -18,7 +18,6 @@ from infra_guide import __version__
 from infra_guide.guides import apply, destroy, init, plan
 from infra_guide.preferences import THEMES, get_web_theme_palette
 
-
 GUIDE_MODULES = {
     "init": init,
     "plan": plan,
@@ -94,6 +93,7 @@ ACTION_COMMANDS = [
         "args": "",
     },
 ]
+
 
 class WebCommandCenterBackend:
     """Expose infra-guide features to a local browser UI."""
@@ -241,12 +241,8 @@ class WebCommandCenterBackend:
                 command_name, args
             )
             if not normalized_ok:
-                return self._error_result(
-                    command_name, raw_args, normalize_error, exit_code=2
-                )
-            return self._run_runner_command(
-                command_name, normalized_args, confirm_execution
-            )
+                return self._error_result(command_name, raw_args, normalize_error, exit_code=2)
+            return self._run_runner_command(command_name, normalized_args, confirm_execution)
         if command_name == "doctor":
             return self._run_doctor(args)
         if command_name == "validate":
@@ -304,9 +300,7 @@ class WebCommandCenterBackend:
             self.execution_lock.release()
 
         detailed_exitcode = command_name == "plan" and "-detailed-exitcode" in final_args
-        success = result["exit_code"] == 0 or (
-            detailed_exitcode and result["exit_code"] == 2
-        )
+        success = result["exit_code"] == 0 or (detailed_exitcode and result["exit_code"] == 2)
 
         self.services["preferences"].record_execution(
             command_name,
@@ -559,7 +553,9 @@ class WebCommandCenter:
                     query = parse_qs(parsed.query)
                     address = query.get("address", [""])[0].strip()
                     if not address:
-                        self._send_json(400, {"success": False, "error": "Missing resource address."})
+                        self._send_json(
+                            400, {"success": False, "error": "Missing resource address."}
+                        )
                         return
                     self._send_json(200, backend.get_state_detail(address))
                     return

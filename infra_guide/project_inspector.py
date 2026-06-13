@@ -8,7 +8,6 @@ import re
 import subprocess
 from typing import Any, Dict, Optional, Tuple
 
-
 MODULE_BLOCK_PATTERN = re.compile(r'\bmodule\s+"[^"]+"')
 BACKEND_BLOCK_PATTERN = re.compile(r'\bbackend\s+"[^"]+"')
 
@@ -45,9 +44,7 @@ class ProjectInspector:
 
     def inspect(self, include_state: bool = False) -> Dict[str, Any]:
         """Inspect the current directory and return a normalized snapshot."""
-        tf_files = sorted(
-            filename for filename in os.listdir(".") if filename.endswith(".tf")
-        )
+        tf_files = sorted(filename for filename in os.listdir(".") if filename.endswith(".tf"))
         tfvars_files = sorted(
             filename
             for filename in os.listdir(".")
@@ -55,9 +52,7 @@ class ProjectInspector:
         )
 
         module_block_count = self._count_pattern_matches(tf_files, MODULE_BLOCK_PATTERN)
-        backend_configured = (
-            self._count_pattern_matches(tf_files, BACKEND_BLOCK_PATTERN) > 0
-        )
+        backend_configured = self._count_pattern_matches(tf_files, BACKEND_BLOCK_PATTERN) > 0
         initialized = os.path.isdir(".terraform")
         lock_file_present = os.path.exists(".terraform.lock.hcl")
         workspace = self._get_current_workspace()

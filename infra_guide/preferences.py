@@ -8,7 +8,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 THEMES: Dict[str, Dict[str, str]] = {
     "aurora": {
         "label": "Aurora",

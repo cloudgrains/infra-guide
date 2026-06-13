@@ -33,7 +33,7 @@ class PolicyChecker:
                 "severity": "high",
                 "description": "S3 buckets should not be publicly accessible",
                 "resource_type": "aws_s3_bucket",
-                "check": lambda r: not r.get("acl", "").startswith("public")
+                "check": lambda r: not r.get("acl", "").startswith("public"),
             },
             {
                 "id": "require-encryption",
@@ -41,9 +41,9 @@ class PolicyChecker:
                 "severity": "high",
                 "description": "Resources should have encryption enabled",
                 "resource_type": "aws_",
-                "check": lambda r: r.get("encrypted") is True or 
-                                 r.get("encryption") is not None or
-                                 "kms_key" in r
+                "check": lambda r: r.get("encrypted") is True
+                or r.get("encryption") is not None
+                or "kms_key" in r,
             },
             {
                 "id": "require-tags",
@@ -51,8 +51,9 @@ class PolicyChecker:
                 "severity": "medium",
                 "description": "All resources should have required tags",
                 "resource_type": "*",
-                "check": lambda r: bool(r.get("tags", {}).get("Environment") and 
-                                      r.get("tags", {}).get("Owner"))
+                "check": lambda r: bool(
+                    r.get("tags", {}).get("Environment") and r.get("tags", {}).get("Owner")
+                ),
             },
             {
                 "id": "no-public-ingress",
@@ -61,9 +62,8 @@ class PolicyChecker:
                 "description": "Security groups should not allow 0.0.0.0/0 ingress",
                 "resource_type": "aws_security_group",
                 "check": lambda r: not any(
-                    rule.get("cidr_blocks", []) == ["0.0.0.0/0"] 
-                    for rule in r.get("ingress", [])
-                )
+                    rule.get("cidr_blocks", []) == ["0.0.0.0/0"] for rule in r.get("ingress", [])
+                ),
             },
             {
                 "id": "require-versioning",
@@ -71,7 +71,7 @@ class PolicyChecker:
                 "severity": "medium",
                 "description": "S3 buckets should have versioning enabled",
                 "resource_type": "aws_s3_bucket",
-                "check": lambda r: r.get("versioning", {}).get("enabled") is True
+                "check": lambda r: r.get("versioning", {}).get("enabled") is True,
             },
             {
                 "id": "no-default-vpc",
@@ -79,8 +79,8 @@ class PolicyChecker:
                 "severity": "low",
                 "description": "Resources should not use default VPC",
                 "resource_type": "aws_",
-                "check": lambda r: "default" not in str(r.get("vpc_id", "")).lower()
-            }
+                "check": lambda r: "default" not in str(r.get("vpc_id", "")).lower(),
+            },
         ]
 
     def check_plan(self, plan_json: str) -> Dict[str, Any]:
@@ -111,18 +111,22 @@ class PolicyChecker:
 
                     try:
                         if not policy["check"](resource_values):
-                            violations.append({
-                                "policy_id": policy["id"],
-                                "policy_name": policy["name"],
-                                "severity": policy["severity"],
-                                "resource": f"{resource_type}.{resource_name}",
-                                "description": policy["description"]
-                            })
+                            violations.append(
+                                {
+                                    "policy_id": policy["id"],
+                                    "policy_name": policy["name"],
+                                    "severity": policy["severity"],
+                                    "resource": f"{resource_type}.{resource_name}",
+                                    "description": policy["description"],
+                                }
+                            )
                         else:
-                            passed.append({
-                                "policy_id": policy["id"],
-                                "resource": f"{resource_type}.{resource_name}"
-                            })
+                            passed.append(
+                                {
+                                    "policy_id": policy["id"],
+                                    "resource": f"{resource_type}.{resource_name}",
+                                }
+                            )
                     except Exception:
                         # Policy check failed, skip
                         continue
@@ -132,34 +136,30 @@ class PolicyChecker:
                 "total_checks": len(passed) + len(violations),
                 "passed": len(passed),
                 "violations": len(violations),
-                "violation_details": violations
+                "violation_details": violations,
             }
 
         except json.JSONDecodeError:
-            return {
-                "success": False,
-                "error": "Invalid JSON plan output"
-            }
+            return {"success": False, "error": "Invalid JSON plan output"}
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Policy check failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Policy check failed: {str(e)}"}
 
     def _extract_resources(self, plan_data: Dict) -> List[Dict]:
         """Extract resources from plan data."""
         resources = []
-        
+
         # Handle different plan JSON formats
         if "resource_changes" in plan_data:
             for change in plan_data["resource_changes"]:
                 if change.get("change", {}).get("actions") in [["create"], ["update"]]:
-                    resources.append({
-                        "type": change.get("type", ""),
-                        "name": change.get("name", ""),
-                        "values": change.get("change", {}).get("after", {})
-                    })
-        
+                    resources.append(
+                        {
+                            "type": change.get("type", ""),
+                            "name": change.get("name", ""),
+                            "values": change.get("change", {}).get("after", {}),
+                        }
+                    )
+
         return resources
 
     def _matches_resource_type(self, policy_type: str, resource_type: str) -> bool:
@@ -190,7 +190,7 @@ class PolicyChecker:
                 f"[white]Checks Passed: {passed}/{total}[/white]",
                 title="Policy Validation Report",
                 border_style="green",
-                box=box.ROUNDED
+                box=box.ROUNDED,
             )
         else:
             summary = Panel(
@@ -199,7 +199,7 @@ class PolicyChecker:
                 f"Violations: {violations}/{total}[/white]",
                 title="Policy Validation Report",
                 border_style="yellow",
-                box=box.ROUNDED
+                box=box.ROUNDED,
             )
 
         self.console.print()
@@ -212,7 +212,7 @@ class PolicyChecker:
                 title="Policy Violations",
                 show_header=True,
                 header_style="bold red",
-                box=box.ROUNDED
+                box=box.ROUNDED,
             )
             table.add_column("Severity", width=10)
             table.add_column("Policy", width=30)
@@ -222,17 +222,17 @@ class PolicyChecker:
                 "critical": "bold red",
                 "high": "red",
                 "medium": "yellow",
-                "low": "blue"
+                "low": "blue",
             }
 
             for violation in results.get("violation_details", [])[:15]:
                 severity = violation["severity"]
                 color = severity_colors.get(severity, "white")
-                
+
                 table.add_row(
                     f"[{color}]{severity.upper()}[/{color}]",
                     violation["policy_name"],
-                    violation["resource"]
+                    violation["resource"],
                 )
 
             self.console.print(table)

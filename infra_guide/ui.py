@@ -20,7 +20,6 @@ from infra_guide import __version__
 from infra_guide.logo import LogoRenderer
 from infra_guide.preferences import DEFAULT_THEME, THEMES, get_theme_palette
 
-
 RISK_STYLE = {
     "low": ("LOW", "success"),
     "medium": ("MEDIUM", "warning"),
@@ -75,9 +74,7 @@ class InfraGuideUI:
         """Clear the terminal screen."""
         self.console.clear()
 
-    def show_banner(
-        self, snapshot: Optional[Dict[str, Any]] = None, title: str = "Command Center"
-    ):
+    def show_banner(self, snapshot: Optional[Dict[str, Any]] = None, title: str = "Command Center"):
         """Display the application banner."""
         hero = Text()
         hero.append("infra-guide", style=f"bold {self._color('brand')}")
@@ -167,7 +164,9 @@ class InfraGuideUI:
             ),
             self._metric_panel(
                 "State",
-                self._plain_state(snapshot.get("state_present"), snapshot.get("state_resource_count")),
+                self._plain_state(
+                    snapshot.get("state_present"), snapshot.get("state_resource_count")
+                ),
                 "Known infrastructure inventory",
                 "surface_alt",
             ),
@@ -183,7 +182,10 @@ class InfraGuideUI:
 
         next_step = Panel(
             Group(
-                Text(snapshot.get("readiness_label", "Workspace status"), style=f"bold {self._color('text')}"),
+                Text(
+                    snapshot.get("readiness_label", "Workspace status"),
+                    style=f"bold {self._color('text')}",
+                ),
                 Text(snapshot.get("recommendation", ""), style=self._base_style()),
                 Text(
                     "\nSuggested flow: doctor -> plan --out tfplan -> apply --plan-file tfplan",
@@ -199,7 +201,9 @@ class InfraGuideUI:
         recent_panel = self._history_panel(history_entries[:6], "Recent Commands")
         favorites_panel = self._favorites_panel(favorites[:6])
 
-        self.console.print(Columns([next_step, recent_panel, favorites_panel], expand=True, equal=True))
+        self.console.print(
+            Columns([next_step, recent_panel, favorites_panel], expand=True, equal=True)
+        )
         self.console.print()
         tips = [
             "Tip: run `doctor --with-drift` before every production deploy.",
@@ -284,7 +288,25 @@ class InfraGuideUI:
 
         return Prompt.ask(
             f"[bold {self._color('accent')}]Select an option[/bold {self._color('accent')}]",
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "0"],
+            choices=[
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "0",
+            ],
             default="0",
         )
 
@@ -470,7 +492,8 @@ class InfraGuideUI:
         table.add_row("Directory", snapshot.get("cwd", "."))
         table.add_row("Workspace", snapshot.get("workspace", "unknown"))
         table.add_row(
-            "Readiness", f"[{self._color(readiness_token)}]{readiness_label}[/{self._color(readiness_token)}]"
+            "Readiness",
+            f"[{self._color(readiness_token)}]{readiness_label}[/{self._color(readiness_token)}]",
         )
         table.add_row("Config files", str(snapshot.get("tf_file_count", 0)))
         table.add_row("Var files", str(snapshot.get("tfvars_file_count", 0)))
@@ -488,7 +511,10 @@ class InfraGuideUI:
                 Group(
                     table,
                     Rule(style=self._color("surface_alt")),
-                    Text(f"Recommendation: {snapshot.get('recommendation', '')}", style=self._base_style()),
+                    Text(
+                        f"Recommendation: {snapshot.get('recommendation', '')}",
+                        style=self._base_style(),
+                    ),
                 ),
                 title=f"[bold {self._color('brand')}]{title}[/bold {self._color('brand')}]",
                 border_style=self._color(readiness_token),
@@ -573,15 +599,21 @@ class InfraGuideUI:
 
     def show_success(self, message: str):
         """Display success message."""
-        self.console.print(f"\n[bold {self._color('success')}]OK[/bold {self._color('success')}] {message}\n")
+        self.console.print(
+            f"\n[bold {self._color('success')}]OK[/bold {self._color('success')}] {message}\n"
+        )
 
     def show_error(self, message: str):
         """Display error message."""
-        self.console.print(f"\n[bold {self._color('danger')}]ERROR[/bold {self._color('danger')}] {message}\n")
+        self.console.print(
+            f"\n[bold {self._color('danger')}]ERROR[/bold {self._color('danger')}] {message}\n"
+        )
 
     def show_info(self, message: str):
         """Display info message."""
-        self.console.print(f"\n[bold {self._color('info')}]INFO[/bold {self._color('info')}] {message}\n")
+        self.console.print(
+            f"\n[bold {self._color('info')}]INFO[/bold {self._color('info')}] {message}\n"
+        )
 
     def wait_for_enter(self):
         """Wait for user to press Enter."""
@@ -655,7 +687,9 @@ class InfraGuideUI:
         if not history_entries:
             content = Text("No commands run yet in this profile.", style=self._muted_style())
         else:
-            table = Table(show_header=True, box=box.SIMPLE, header_style=f"bold {self._color('accent')}")
+            table = Table(
+                show_header=True, box=box.SIMPLE, header_style=f"bold {self._color('accent')}"
+            )
             table.add_column("When", style=self._muted_style(), width=12)
             table.add_column("Command", style=self._base_style())
             table.add_column("Code", justify="right", width=6)
@@ -681,9 +715,14 @@ class InfraGuideUI:
 
     def _favorites_panel(self, favorites: List[Dict[str, Any]]) -> Panel:
         if not favorites:
-            content = Text("No favorites yet. Favorite a command from its preview screen.", style=self._muted_style())
+            content = Text(
+                "No favorites yet. Favorite a command from its preview screen.",
+                style=self._muted_style(),
+            )
         else:
-            table = Table(show_header=True, box=box.SIMPLE, header_style=f"bold {self._color('accent')}")
+            table = Table(
+                show_header=True, box=box.SIMPLE, header_style=f"bold {self._color('accent')}"
+            )
             table.add_column("Command", style=self._base_style())
             table.add_column("Saved", style=self._muted_style(), width=12)
             for entry in favorites:
@@ -773,6 +812,7 @@ class InfraGuideUI:
             )
         else:
             from rich.syntax import Syntax
+
             syntax = Syntax(raw_output, "hcl", theme="ansi_dark", word_wrap=True)
             self.console.print(
                 Panel(
@@ -816,7 +856,12 @@ class InfraGuideUI:
         self.console.print()
 
         if violations > 0:
-            sev_colors = {"critical": "danger", "high": "danger", "medium": "warning", "low": "info"}
+            sev_colors = {
+                "critical": "danger",
+                "high": "danger",
+                "medium": "warning",
+                "low": "info",
+            }
             table = Table(
                 show_header=True,
                 header_style=f"bold {self._color('accent')}",

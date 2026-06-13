@@ -21,9 +21,7 @@ class CommandRunner:
         """
         self.tool_name = tool_name
 
-    def build_command(
-        self, command: str, additional_args: Optional[List[str]] = None
-    ) -> List[str]:
+    def build_command(self, command: str, additional_args: Optional[List[str]] = None) -> List[str]:
         """
         Build the final command list.
 
@@ -39,9 +37,7 @@ class CommandRunner:
             cmd.extend(additional_args)
         return cmd
 
-    def format_command(
-        self, command: str, additional_args: Optional[List[str]] = None
-    ) -> str:
+    def format_command(self, command: str, additional_args: Optional[List[str]] = None) -> str:
         """
         Return a shell-safe command preview string.
 
@@ -73,12 +69,7 @@ class CommandRunner:
 
         try:
             # Run the command with live output
-            result = subprocess.run(
-                cmd,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-                stdin=sys.stdin
-            )
+            result = subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr, stdin=sys.stdin)
             return result.returncode
         except KeyboardInterrupt:
             print("\n\nCommand interrupted by user.")

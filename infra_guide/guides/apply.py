@@ -6,7 +6,7 @@ Guide for the 'apply' command.
 def get_guide() -> dict:
     """
     Returns guide information for the apply command.
-    
+
     Returns:
         dict: Guide data with description, flags, best practices, and warnings
     """
@@ -22,32 +22,23 @@ def get_guide() -> dict:
         "flags": [
             {
                 "flag": "-auto-approve",
-                "description": "Skip interactive approval (dangerous - use with caution!)"
+                "description": "Skip interactive approval (dangerous - use with caution!)",
             },
-            {
-                "flag": "path/to/planfile",
-                "description": "Apply a previously saved plan file"
-            },
-            {
-                "flag": "-var 'key=value'",
-                "description": "Set a variable in the configuration"
-            },
-            {
-                "flag": "-var-file=path",
-                "description": "Load variable values from a file"
-            },
+            {"flag": "path/to/planfile", "description": "Apply a previously saved plan file"},
+            {"flag": "-var 'key=value'", "description": "Set a variable in the configuration"},
+            {"flag": "-var-file=path", "description": "Load variable values from a file"},
             {
                 "flag": "-target=resource",
-                "description": "Apply changes only to specific resources (use sparingly)"
+                "description": "Apply changes only to specific resources (use sparingly)",
             },
             {
                 "flag": "-parallelism=n",
-                "description": "Limit concurrent resource operations (default: 10)"
+                "description": "Limit concurrent resource operations (default: 10)",
             },
             {
                 "flag": "-lock=false",
-                "description": "Don't lock state during operation (not recommended)"
-            }
+                "description": "Don't lock state during operation (not recommended)",
+            },
         ],
         "examples": [
             "infra-guide apply",
@@ -62,7 +53,7 @@ def get_guide() -> dict:
             "Keep backups of state files before major changes",
             "Test changes in a development/staging environment first",
             "Use version control for all configuration files",
-            "Document why changes are being made (commit messages, tickets, etc.)"
+            "Document why changes are being made (commit messages, tickets, etc.)",
         ],
         "warnings": [
             "⚠️  THIS COMMAND MODIFIES REAL INFRASTRUCTURE - DOUBLE CHECK BEFORE PROCEEDING!",
@@ -72,6 +63,6 @@ def get_guide() -> dict:
             "Downtime risk: Some updates require resource replacement",
             "State file will be modified - ensure it's properly backed up",
             "Failed applies may leave infrastructure in an incomplete state",
-            "-auto-approve bypasses all safety checks - use only in trusted automation"
-        ]
+            "-auto-approve bypasses all safety checks - use only in trusted automation",
+        ],
     }

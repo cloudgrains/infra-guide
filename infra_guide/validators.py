@@ -26,7 +26,7 @@ class PreFlightValidator:
 
     def _has_tf_files(self) -> bool:
         """Return True when the current directory contains Terraform/OpenTofu files."""
-        return any(filename.endswith('.tf') for filename in os.listdir('.'))
+        return any(filename.endswith(".tf") for filename in os.listdir("."))
 
     def run_all_checks(self) -> Dict[str, Any]:
         """
@@ -42,7 +42,7 @@ class PreFlightValidator:
             self._check_formatting(),
             self._check_backend_config(),
             self._check_provider_versions(),
-            self._check_required_variables()
+            self._check_required_variables(),
         ]
 
         passed = sum(1 for check in checks if check["status"] == "pass")
@@ -55,39 +55,39 @@ class PreFlightValidator:
             "passed": passed,
             "warnings": warnings,
             "failed": failed,
-            "all_passed": failed == 0
+            "all_passed": failed == 0,
         }
 
     def _check_configuration_files(self) -> Dict[str, Any]:
         """Check if configuration files exist."""
-        tf_files = [f for f in os.listdir('.') if f.endswith('.tf')]
-        
+        tf_files = [f for f in os.listdir(".") if f.endswith(".tf")]
+
         if tf_files:
             return {
                 "name": "Configuration Files",
                 "status": "pass",
-                "message": f"Found {len(tf_files)} .tf file(s)"
+                "message": f"Found {len(tf_files)} .tf file(s)",
             }
         else:
             return {
                 "name": "Configuration Files",
                 "status": "fail",
-                "message": "No .tf files found in current directory"
+                "message": "No .tf files found in current directory",
             }
 
     def _check_initialization(self) -> Dict[str, Any]:
         """Check if directory is initialized."""
-        if os.path.exists('.terraform'):
+        if os.path.exists(".terraform"):
             return {
                 "name": "Initialization",
                 "status": "pass",
-                "message": "Directory is initialized"
+                "message": "Directory is initialized",
             }
         else:
             return {
                 "name": "Initialization",
                 "status": "warning",
-                "message": "Directory not initialized - run 'init' first"
+                "message": "Directory not initialized - run 'init' first",
             }
 
     def _check_syntax(self) -> Dict[str, Any]:
@@ -96,41 +96,38 @@ class PreFlightValidator:
             return {
                 "name": "Syntax Validation",
                 "status": "warning",
-                "message": "Skipped - no .tf files found"
+                "message": "Skipped - no .tf files found",
             }
 
         try:
             result = subprocess.run(
-                [self.tool_name, "validate", "-json"],
-                capture_output=True,
-                text=True,
-                timeout=30
+                [self.tool_name, "validate", "-json"], capture_output=True, text=True, timeout=30
             )
 
             if result.returncode == 0:
                 return {
                     "name": "Syntax Validation",
                     "status": "pass",
-                    "message": "Configuration is valid"
+                    "message": "Configuration is valid",
                 }
             else:
                 return {
                     "name": "Syntax Validation",
                     "status": "fail",
-                    "message": "Configuration has syntax errors"
+                    "message": "Configuration has syntax errors",
                 }
 
         except subprocess.TimeoutExpired:
             return {
                 "name": "Syntax Validation",
                 "status": "warning",
-                "message": "Validation timed out"
+                "message": "Validation timed out",
             }
         except Exception as e:
             return {
                 "name": "Syntax Validation",
                 "status": "warning",
-                "message": f"Could not validate: {str(e)}"
+                "message": f"Could not validate: {str(e)}",
             }
 
     def _check_formatting(self) -> Dict[str, Any]:
@@ -139,7 +136,7 @@ class PreFlightValidator:
             return {
                 "name": "Code Formatting",
                 "status": "warning",
-                "message": "Skipped - no .tf files found"
+                "message": "Skipped - no .tf files found",
             }
 
         try:
@@ -147,27 +144,27 @@ class PreFlightValidator:
                 [self.tool_name, "fmt", "-check", "-recursive"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             if result.returncode == 0:
                 return {
                     "name": "Code Formatting",
                     "status": "pass",
-                    "message": "All files are properly formatted"
+                    "message": "All files are properly formatted",
                 }
             else:
                 return {
                     "name": "Code Formatting",
                     "status": "warning",
-                    "message": "Some files need formatting (run 'fmt')"
+                    "message": "Some files need formatting (run 'fmt')",
                 }
 
         except Exception:
             return {
                 "name": "Code Formatting",
                 "status": "warning",
-                "message": "Could not check formatting"
+                "message": "Could not check formatting",
             }
 
     def _check_backend_config(self) -> Dict[str, Any]:
@@ -176,17 +173,17 @@ class PreFlightValidator:
             return {
                 "name": "Backend Configuration",
                 "status": "warning",
-                "message": "Skipped - no .tf files found"
+                "message": "Skipped - no .tf files found",
             }
 
         # Check for backend configuration in .tf files
         has_backend = False
         try:
-            for filename in os.listdir('.'):
-                if filename.endswith('.tf'):
-                    with open(filename, 'r', encoding="utf-8", errors="ignore") as f:
+            for filename in os.listdir("."):
+                if filename.endswith(".tf"):
+                    with open(filename, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
-                        if 'backend' in content:
+                        if "backend" in content:
                             has_backend = True
                             break
 
@@ -194,20 +191,20 @@ class PreFlightValidator:
                 return {
                     "name": "Backend Configuration",
                     "status": "pass",
-                    "message": "Backend configured"
+                    "message": "Backend configured",
                 }
             else:
                 return {
                     "name": "Backend Configuration",
                     "status": "warning",
-                    "message": "No backend configured (using local state)"
+                    "message": "No backend configured (using local state)",
                 }
 
         except Exception:
             return {
                 "name": "Backend Configuration",
                 "status": "warning",
-                "message": "Could not check backend configuration"
+                "message": "Could not check backend configuration",
             }
 
     def _check_provider_versions(self) -> Dict[str, Any]:
@@ -216,20 +213,20 @@ class PreFlightValidator:
             return {
                 "name": "Provider Versions",
                 "status": "warning",
-                "message": "Skipped - no .tf files found"
+                "message": "Skipped - no .tf files found",
             }
 
-        if os.path.exists('.terraform.lock.hcl'):
+        if os.path.exists(".terraform.lock.hcl"):
             return {
                 "name": "Provider Versions",
                 "status": "pass",
-                "message": "Provider versions are locked"
+                "message": "Provider versions are locked",
             }
         else:
             return {
                 "name": "Provider Versions",
                 "status": "warning",
-                "message": "No lock file found - run 'init' to lock versions"
+                "message": "No lock file found - run 'init' to lock versions",
             }
 
     def _check_required_variables(self) -> Dict[str, Any]:
@@ -238,36 +235,33 @@ class PreFlightValidator:
             return {
                 "name": "Required Variables",
                 "status": "warning",
-                "message": "Skipped - no .tf files found"
+                "message": "Skipped - no .tf files found",
             }
 
         # This is a simplified check
         try:
             result = subprocess.run(
-                [self.tool_name, "validate"],
-                capture_output=True,
-                text=True,
-                timeout=10
+                [self.tool_name, "validate"], capture_output=True, text=True, timeout=10
             )
 
             if "variable" in result.stderr.lower() and "required" in result.stderr.lower():
                 return {
                     "name": "Required Variables",
                     "status": "warning",
-                    "message": "Some required variables may not be set"
+                    "message": "Some required variables may not be set",
                 }
             else:
                 return {
                     "name": "Required Variables",
                     "status": "pass",
-                    "message": "All required variables appear to be set"
+                    "message": "All required variables appear to be set",
                 }
 
         except Exception:
             return {
                 "name": "Required Variables",
                 "status": "pass",
-                "message": "Variable check skipped"
+                "message": "Variable check skipped",
             }
 
     def show_validation_report(self, results: Dict[str, Any]):
@@ -305,7 +299,7 @@ class PreFlightValidator:
             f"Failed: {failed}/{total}[/white]",
             title="Pre-Flight Validation Report",
             border_style=summary_color,
-            box=box.ROUNDED
+            box=box.ROUNDED,
         )
 
         self.console.print(summary)
@@ -313,27 +307,20 @@ class PreFlightValidator:
 
         # Detailed results
         table = Table(
-            title="Check Details",
-            show_header=True,
-            header_style="bold magenta",
-            box=box.ROUNDED
+            title="Check Details", show_header=True, header_style="bold magenta", box=box.ROUNDED
         )
         table.add_column("Check", width=25)
         table.add_column("Status", width=12)
         table.add_column("Message", width=50)
 
-        status_styles = {
-            "pass": ("✓", "green"),
-            "warning": ("⚠", "yellow"),
-            "fail": ("✗", "red")
-        }
+        status_styles = {"pass": ("✓", "green"), "warning": ("⚠", "yellow"), "fail": ("✗", "red")}
 
         for check in results["checks"]:
             icon, color = status_styles.get(check["status"], ("?", "white"))
             table.add_row(
                 check["name"],
                 f"[{color}]{icon} {check['status'].upper()}[/{color}]",
-                check["message"]
+                check["message"],
             )
 
         self.console.print(table)
@@ -343,7 +330,7 @@ class PreFlightValidator:
             recommendation = Panel(
                 "[yellow]💡 Recommendation: Address warnings and errors before proceeding with infrastructure changes.[/yellow]",
                 border_style="yellow",
-                box=box.ROUNDED
+                box=box.ROUNDED,
             )
             self.console.print(recommendation)
             self.console.print()

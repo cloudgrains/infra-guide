@@ -6,7 +6,7 @@ Guide for the 'plan' command.
 def get_guide() -> dict:
     """
     Returns guide information for the plan command.
-    
+
     Returns:
         dict: Guide data with description, flags, best practices, and warnings
     """
@@ -22,32 +22,20 @@ def get_guide() -> dict:
         "flags": [
             {
                 "flag": "-out=path",
-                "description": "Save the plan to a file for later execution with 'apply'"
+                "description": "Save the plan to a file for later execution with 'apply'",
             },
-            {
-                "flag": "-var 'key=value'",
-                "description": "Set a variable in the configuration"
-            },
-            {
-                "flag": "-var-file=path",
-                "description": "Load variable values from a file"
-            },
+            {"flag": "-var 'key=value'", "description": "Set a variable in the configuration"},
+            {"flag": "-var-file=path", "description": "Load variable values from a file"},
             {
                 "flag": "-target=resource",
-                "description": "Focus planning on specific resources (use sparingly)"
+                "description": "Focus planning on specific resources (use sparingly)",
             },
-            {
-                "flag": "-destroy",
-                "description": "Create a plan to destroy all resources"
-            },
-            {
-                "flag": "-refresh=false",
-                "description": "Skip refreshing state before planning"
-            },
+            {"flag": "-destroy", "description": "Create a plan to destroy all resources"},
+            {"flag": "-refresh=false", "description": "Skip refreshing state before planning"},
             {
                 "flag": "-detailed-exitcode",
-                "description": "Return detailed exit code (2 if changes, 0 if no changes)"
-            }
+                "description": "Return detailed exit code (2 if changes, 0 if no changes)",
+            },
         ],
         "examples": [
             "infra-guide plan",
@@ -60,13 +48,13 @@ def get_guide() -> dict:
             "Save important plans with '-out' flag for exact reproducibility",
             "Use 'plan' in CI/CD pipelines to validate configurations",
             "Pay attention to the resource count summary at the end (create, update, destroy)",
-            "For production changes, have a peer review the plan output"
+            "For production changes, have a peer review the plan output",
         ],
         "warnings": [
             "Plan output may contain sensitive data - be careful when sharing logs",
             "A successful plan doesn't guarantee apply will succeed (network issues, permissions, etc.)",
             "The actual state may change between 'plan' and 'apply' if others are making changes",
             "Some providers may have side effects even during plan (though this is rare)",
-            "Avoid using -target in production as it can lead to inconsistent infrastructure"
-        ]
+            "Avoid using -target in production as it can lead to inconsistent infrastructure",
+        ],
     }

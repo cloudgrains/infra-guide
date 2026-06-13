@@ -6,7 +6,7 @@ Guide for the 'destroy' command.
 def get_guide() -> dict:
     """
     Returns guide information for the destroy command.
-    
+
     Returns:
         dict: Guide data with description, flags, best practices, and warnings
     """
@@ -22,32 +22,20 @@ def get_guide() -> dict:
         "flags": [
             {
                 "flag": "-auto-approve",
-                "description": "Skip interactive approval (EXTREMELY DANGEROUS!)"
+                "description": "Skip interactive approval (EXTREMELY DANGEROUS!)",
             },
-            {
-                "flag": "-target=resource",
-                "description": "Destroy only specific resources"
-            },
-            {
-                "flag": "-var 'key=value'",
-                "description": "Set a variable in the configuration"
-            },
-            {
-                "flag": "-var-file=path",
-                "description": "Load variable values from a file"
-            },
+            {"flag": "-target=resource", "description": "Destroy only specific resources"},
+            {"flag": "-var 'key=value'", "description": "Set a variable in the configuration"},
+            {"flag": "-var-file=path", "description": "Load variable values from a file"},
             {
                 "flag": "-parallelism=n",
-                "description": "Limit concurrent resource deletions (default: 10)"
+                "description": "Limit concurrent resource deletions (default: 10)",
             },
-            {
-                "flag": "-refresh=false",
-                "description": "Skip refreshing state before destroying"
-            },
+            {"flag": "-refresh=false", "description": "Skip refreshing state before destroying"},
             {
                 "flag": "-lock=false",
-                "description": "Don't lock state during operation (not recommended)"
-            }
+                "description": "Don't lock state during operation (not recommended)",
+            },
         ],
         "examples": [
             "infra-guide destroy",
@@ -63,7 +51,7 @@ def get_guide() -> dict:
             "Consider using lifecycle prevention rules for critical resources",
             "Verify with team members before destroying shared infrastructure",
             "Document the reason for destruction",
-            "In production, require multi-person approval before destroying"
+            "In production, require multi-person approval before destroying",
         ],
         "warnings": [
             "🔥 EXTREME DANGER: THIS COMMAND DELETES ALL YOUR INFRASTRUCTURE!",
@@ -74,6 +62,6 @@ def get_guide() -> dict:
             "🔐 Compliance risk: Ensure you have approval to delete resources",
             "🌐 Dependencies: External systems may break if they depend on these resources",
             "💸 Cost implications: While destroying saves costs, snapshots/backups may still incur charges",
-            "NEVER use -auto-approve for destroy in production!"
-        ]
+            "NEVER use -auto-approve for destroy in production!",
+        ],
     }

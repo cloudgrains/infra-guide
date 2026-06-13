@@ -21,11 +21,11 @@ class ToolDetector:
         # Check for tofu first (prefer OpenTofu)
         if shutil.which("tofu"):
             return "tofu"
-        
+
         # Fall back to terraform
         if shutil.which("terraform"):
             return "terraform"
-        
+
         return None
 
     @staticmethod
@@ -42,15 +42,10 @@ class ToolDetector:
         import subprocess
 
         try:
-            result = subprocess.run(
-                [tool, "version"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
+            result = subprocess.run([tool, "version"], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 # Extract first line which typically contains version
-                return result.stdout.split('\n')[0].strip()
+                return result.stdout.split("\n")[0].strip()
             return "unknown"
         except Exception:
             return "unknown"

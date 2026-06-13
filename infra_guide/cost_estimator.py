@@ -9,7 +9,6 @@ import subprocess
 from collections import Counter
 from typing import Any, Dict, List, Optional
 
-
 AWS_PROVIDER_TOKEN = "aws"
 HIGH_IMPACT_PREFIXES = (
     "aws_instance",
@@ -43,9 +42,7 @@ class CostEstimator:
     def __init__(self, tool_name: str):
         self.tool_name = tool_name
 
-    def estimate_apply_cost(
-        self, command_args: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+    def estimate_apply_cost(self, command_args: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Estimate cost confidence for an apply operation.
 
@@ -98,9 +95,7 @@ class CostEstimator:
             return {
                 "status": "warning",
                 "title": "Cost preview unavailable",
-                "summary": (
-                    f"Could not read saved plan file '{plan_file}' for cost analysis."
-                ),
+                "summary": (f"Could not read saved plan file '{plan_file}' for cost analysis."),
                 "details": [
                     "Make sure the plan file exists and is readable by the current Terraform/OpenTofu binary.",
                 ],

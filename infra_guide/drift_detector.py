@@ -37,19 +37,19 @@ class DriftDetector:
                 [self.tool_name, "plan", "-refresh-only", "-json"],
                 capture_output=True,
                 text=True,
-                timeout=300
+                timeout=300,
             )
 
             if result.returncode != 0:
                 return {
                     "success": False,
                     "error": "Failed to detect drift",
-                    "details": result.stderr
+                    "details": result.stderr,
                 }
 
             # Parse JSON output
             drift_items = []
-            for line in result.stdout.split('\n'):
+            for line in result.stdout.split("\n"):
                 if line.strip():
                     try:
                         data = json.loads(line)
@@ -62,19 +62,13 @@ class DriftDetector:
                 "success": True,
                 "drift_detected": len(drift_items) > 0,
                 "drift_count": len(drift_items),
-                "drifted_resources": drift_items
+                "drifted_resources": drift_items,
             }
 
         except subprocess.TimeoutExpired:
-            return {
-                "success": False,
-                "error": "Drift detection timed out"
-            }
+            return {"success": False, "error": "Drift detection timed out"}
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Drift detection failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Drift detection failed: {str(e)}"}
 
     def show_drift_report(self, drift_data: Dict[str, Any]):
         """
@@ -93,19 +87,19 @@ class DriftDetector:
                 "[white]Your infrastructure matches the state file.[/white]",
                 title="Drift Detection Report",
                 border_style="green",
-                box=box.ROUNDED
+                box=box.ROUNDED,
             )
             self.console.print(panel)
             return
 
         # Show drifted resources
         drift_count = drift_data.get("drift_count", 0)
-        
+
         table = Table(
             title=f"⚠️  Detected {drift_count} Drifted Resource(s)",
             show_header=True,
             header_style="bold yellow",
-            box=box.ROUNDED
+            box=box.ROUNDED,
         )
         table.add_column("Resource", style="cyan", width=40)
         table.add_column("Action", style="yellow", width=15)
@@ -114,19 +108,12 @@ class DriftDetector:
         for resource in drift_data.get("drifted_resources", [])[:10]:  # Show first 10
             addr = resource.get("resource", {}).get("addr", "Unknown")
             action = resource.get("action", "unknown")
-            
-            action_emoji = {
-                "update": "🔄",
-                "delete": "🗑️",
-                "create": "➕",
-                "no-op": "✓"
-            }.get(action, "❓")
-            
-            table.add_row(
-                addr,
-                f"{action_emoji} {action}",
-                "Drift Detected"
+
+            action_emoji = {"update": "🔄", "delete": "🗑️", "create": "➕", "no-op": "✓"}.get(
+                action, "❓"
             )
+
+            table.add_row(addr, f"{action_emoji} {action}", "Drift Detected")
 
         self.console.print()
         self.console.print(table)
@@ -137,7 +124,7 @@ class DriftDetector:
             "This means changes were made outside of Terraform/OpenTofu.\n"
             "Consider running 'apply' to bring infrastructure back in sync.[/yellow]",
             border_style="yellow",
-            box=box.ROUNDED
+            box=box.ROUNDED,
         )
         self.console.print(warning_panel)
         self.console.print()

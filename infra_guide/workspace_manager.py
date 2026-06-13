@@ -157,7 +157,9 @@ class WorkspaceManager:
             elif choice == "2":
                 self._handle_create_workspace()
             elif choice == "3":
-                self._handle_delete_workspace(ws_info.get("workspaces", []), ws_info.get("current", "default"))
+                self._handle_delete_workspace(
+                    ws_info.get("workspaces", []), ws_info.get("current", "default")
+                )
             elif choice == "4":
                 continue
             else:
@@ -207,9 +209,7 @@ class WorkspaceManager:
 
         result = self.create_workspace(workspace_name)
         if result["success"]:
-            self.console.print(
-                f"[bold green]OK[/bold green] Created workspace: {workspace_name}"
-            )
+            self.console.print(f"[bold green]OK[/bold green] Created workspace: {workspace_name}")
         else:
             self.console.print(
                 f"[bold red]ERROR[/bold red] {result['stderr'] or 'Failed to create workspace.'}"
@@ -253,9 +253,7 @@ class WorkspaceManager:
 
         result = self.delete_workspace(workspace_name)
         if result["success"]:
-            self.console.print(
-                f"[bold green]OK[/bold green] Deleted workspace: {workspace_name}"
-            )
+            self.console.print(f"[bold green]OK[/bold green] Deleted workspace: {workspace_name}")
         else:
             self.console.print(
                 f"[bold red]ERROR[/bold red] {result['stderr'] or 'Failed to delete workspace.'}"

@@ -25,7 +25,6 @@ from infra_guide.validators import PreFlightValidator
 from infra_guide.web import WebCommandCenter
 from infra_guide.workspace_manager import WorkspaceManager
 
-
 GUIDE_MODULES = {
     "init": init,
     "plan": plan,
@@ -253,10 +252,16 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME",
         help="show a single output value by name",
     )
-    output_parser.add_argument("--json", dest="output_json", action="store_true", help="emit raw JSON")
-    output_parser.add_argument("--raw", dest="output_raw", action="store_true", help="print the value without formatting")
+    output_parser.add_argument(
+        "--json", dest="output_json", action="store_true", help="emit raw JSON"
+    )
+    output_parser.add_argument(
+        "--raw", dest="output_raw", action="store_true", help="print the value without formatting"
+    )
 
-    policy_parser = subparsers.add_parser("policy", help="check plan against built-in security policies")
+    policy_parser = subparsers.add_parser(
+        "policy", help="check plan against built-in security policies"
+    )
     policy_parser.add_argument(
         "--plan-file",
         dest="policy_plan_file",
@@ -266,7 +271,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     init_parser = subparsers.add_parser("init", help="initialize a working directory")
     init_parser.add_argument("--upgrade", action="store_true", help="upgrade providers and modules")
-    init_parser.add_argument("--reconfigure", action="store_true", help="reconfigure backend settings")
+    init_parser.add_argument(
+        "--reconfigure", action="store_true", help="reconfigure backend settings"
+    )
     init_parser.add_argument("--migrate-state", action="store_true", help="migrate backend state")
     init_parser.add_argument(
         "--backend-config",
@@ -352,9 +359,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def add_common_runtime_options(
-    parser: argparse.ArgumentParser, allow_target: bool = True
-):
+def add_common_runtime_options(parser: argparse.ArgumentParser, allow_target: bool = True):
     """Add shared flags used by plan/apply/destroy commands."""
     parser.add_argument(
         "--var",
@@ -427,9 +432,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     preferences = PreferencesStore()
     chosen_theme = (
-        args.theme
-        or getattr(args, "set_theme_name", None)
-        or preferences.get_theme_name()
+        args.theme or getattr(args, "set_theme_name", None) or preferences.get_theme_name()
     )
 
     tool = args.tool or ToolDetector.detect()
@@ -659,8 +662,13 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
             handle_cicd_menu(ui, services["cicd_runner"], services["inspector"])
         elif choice == "14":
             ui.clear_screen()
-            ui.show_banner(snapshot=services["inspector"].inspect(include_state=False), title="Web Command Center")
-            ui.show_info("Launching the local web UI on an available localhost port. Press Ctrl+C there to return.")
+            ui.show_banner(
+                snapshot=services["inspector"].inspect(include_state=False),
+                title="Web Command Center",
+            )
+            ui.show_info(
+                "Launching the local web UI on an available localhost port. Press Ctrl+C there to return."
+            )
             run_web_launcher(
                 tool_name=ui.tool_name,
                 tool_version=ui.tool_version,
@@ -680,9 +688,7 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
             return 0
 
 
-def show_guide_command(
-    ui: InfraGuideUI, inspector: ProjectInspector, command_name: str
-) -> int:
+def show_guide_command(ui: InfraGuideUI, inspector: ProjectInspector, command_name: str) -> int:
     """Display a guide for a direct CLI command."""
     snapshot = inspector.inspect(include_state=False)
     guide_data = GUIDE_MODULES[command_name].get_guide()
@@ -749,7 +755,12 @@ def run_guided_command(
         ui.show_command_output_header(preview)
         return_code = runner.execute(command_name, extra_args)
         preferences.record_execution(command_name, extra_args, preview, os.getcwd(), return_code)
-        summarize_command_result(ui, command_name, return_code, detailed_exitcode=_uses_detailed_exitcode(command_name, extra_args))
+        summarize_command_result(
+            ui,
+            command_name,
+            return_code,
+            detailed_exitcode=_uses_detailed_exitcode(command_name, extra_args),
+        )
     else:
         ui.show_info("Command cancelled.")
 
@@ -865,9 +876,7 @@ def run_state_command(args: argparse.Namespace, state_explorer: StateExplorer) -
     return 0
 
 
-def run_workspace_command(
-    args: argparse.Namespace, workspace_manager: WorkspaceManager
-) -> int:
+def run_workspace_command(args: argparse.Namespace, workspace_manager: WorkspaceManager) -> int:
     """Run direct workspace commands."""
     if args.create_workspace:
         result = workspace_manager.create_workspace(args.create_workspace)
@@ -990,9 +999,7 @@ def run_web_launcher(
     return web_app.serve()
 
 
-def handle_state_menu(
-    ui: InfraGuideUI, state_explorer: StateExplorer, inspector: ProjectInspector
-):
+def handle_state_menu(ui: InfraGuideUI, state_explorer: StateExplorer, inspector: ProjectInspector):
     """Interactive state explorer menu."""
     while True:
         ui.clear_screen()
@@ -1122,7 +1129,9 @@ def handle_history_menu(
                     preferences=preferences,
                     cost_estimator=cost_estimator,
                     require_confirmation=entry["command_name"] in ("apply", "destroy"),
-                    detailed_exitcode=_uses_detailed_exitcode(entry["command_name"], list(entry.get("args", []))),
+                    detailed_exitcode=_uses_detailed_exitcode(
+                        entry["command_name"], list(entry.get("args", []))
+                    ),
                 )
                 ui.wait_for_enter()
         elif choice == "2":
@@ -1152,7 +1161,9 @@ def handle_history_menu(
                     preferences=preferences,
                     cost_estimator=cost_estimator,
                     require_confirmation=entry["command_name"] in ("apply", "destroy"),
-                    detailed_exitcode=_uses_detailed_exitcode(entry["command_name"], list(entry.get("args", []))),
+                    detailed_exitcode=_uses_detailed_exitcode(
+                        entry["command_name"], list(entry.get("args", []))
+                    ),
                 )
                 ui.wait_for_enter()
         elif choice == "4":
@@ -1187,9 +1198,7 @@ def handle_theme_menu(
         ui.show_theme_gallery(preferences.get_theme_name())
 
         theme_choices = list(sorted(THEMES.keys())) + ["back"]
-        ui.console.print(
-            f"Active theme: [bold]{preferences.get_theme_name()}[/bold]\n"
-        )
+        ui.console.print(f"Active theme: [bold]{preferences.get_theme_name()}[/bold]\n")
         selected = Prompt.ask(
             "[cyan]Choose a theme or back[/cyan]",
             choices=theme_choices,
@@ -1205,9 +1214,7 @@ def handle_theme_menu(
         ui.wait_for_enter()
 
 
-def run_output_command(
-    args: argparse.Namespace, ui: InfraGuideUI, runner: CommandRunner
-) -> int:
+def run_output_command(args: argparse.Namespace, ui: InfraGuideUI, runner: CommandRunner) -> int:
     """Show terraform/tofu output values."""
     cmd_args: List[str] = []
     if getattr(args, "output_json", False):
@@ -1224,9 +1231,7 @@ def run_output_command(
     return 0 if result["success"] else result["exit_code"]
 
 
-def run_policy_command(
-    args: argparse.Namespace, ui: InfraGuideUI, runner: CommandRunner
-) -> int:
+def run_policy_command(args: argparse.Namespace, ui: InfraGuideUI, runner: CommandRunner) -> int:
     """Run policy checks against a plan file."""
     plan_file = getattr(args, "policy_plan_file", None)
     return _do_policy_check(ui, runner, plan_file)

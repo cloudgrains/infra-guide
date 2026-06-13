@@ -75,8 +75,5 @@ class LogoRenderer:
             style = f"rgb({top[0]},{top[1]},{top[2]})"
             return Text("▀", style=style)
 
-        style = (
-            f"rgb({top[0]},{top[1]},{top[2]}) on "
-            f"rgb({bottom[0]},{bottom[1]},{bottom[2]})"
-        )
+        style = f"rgb({top[0]},{top[1]},{top[2]}) on " f"rgb({bottom[0]},{bottom[1]},{bottom[2]})"
         return Text("▀", style=style)
