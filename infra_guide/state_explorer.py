@@ -69,7 +69,7 @@ class StateExplorer:
                     if line:
                         resources.append({
                             "address": line.strip(),
-                            "type": line.split('.')[0] if '.' in line else "unknown"
+                            "type": line.split(".")[-2] if "." in line else "unknown"
                         })
                 return resources
             return []

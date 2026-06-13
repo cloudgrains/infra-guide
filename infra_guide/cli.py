@@ -15,6 +15,7 @@ from infra_guide.cost_estimator import CostEstimator
 from infra_guide.detector import ToolDetector
 from infra_guide.drift_detector import DriftDetector
 from infra_guide.guides import apply, destroy, init, plan
+from infra_guide.policy_checker import PolicyChecker
 from infra_guide.preferences import DEFAULT_THEME, THEMES, PreferencesStore
 from infra_guide.project_inspector import ProjectInspector
 from infra_guide.runner import CommandRunner
@@ -46,6 +47,8 @@ RISK_BY_COMMAND = {
     "workspace": "medium",
     "fmt": "low",
     "cicd": "medium",
+    "output": "low",
+    "policy": "low",
 }
 
 
@@ -242,6 +245,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="skip validation checks",
     )
 
+    output_parser = subparsers.add_parser("output", help="show infrastructure output values")
+    output_parser.add_argument(
+        "output_name",
+        nargs="?",
+        default=None,
+        metavar="NAME",
+        help="show a single output value by name",
+    )
+    output_parser.add_argument("--json", dest="output_json", action="store_true", help="emit raw JSON")
+    output_parser.add_argument("--raw", dest="output_raw", action="store_true", help="print the value without formatting")
+
+    policy_parser = subparsers.add_parser("policy", help="check plan against built-in security policies")
+    policy_parser.add_argument(
+        "--plan-file",
+        dest="policy_plan_file",
+        metavar="PATH",
+        help="saved plan file to analyse (JSON format required)",
+    )
+
     init_parser = subparsers.add_parser("init", help="initialize a working directory")
     init_parser.add_argument("--upgrade", action="store_true", help="upgrade providers and modules")
     init_parser.add_argument("--reconfigure", action="store_true", help="reconfigure backend settings")
@@ -412,14 +434,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     tool = args.tool or ToolDetector.detect()
     if tool is None:
-        if args.command in (None, "interactive", "status", "doctor", "guide", "web", "validate", "drift", "state", "workspace", "fmt", "cicd", "init", "plan", "apply", "destroy"):
-            temp_ui = InfraGuideUI("none", "none", no_color=args.no_color, theme_name=chosen_theme)
-            temp_ui.show_no_tool_error()
-            return 1
-        tool = "terraform"
-        tool_version = "not detected"
-    else:
-        tool_version = ToolDetector.get_version(tool)
+        temp_ui = InfraGuideUI("none", "none", no_color=args.no_color, theme_name=chosen_theme)
+        temp_ui.show_no_tool_error()
+        return 1
+    tool_version = ToolDetector.get_version(tool)
 
     ui = InfraGuideUI(tool, tool_version, no_color=args.no_color, theme_name=chosen_theme)
 
@@ -516,6 +534,12 @@ def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[
             skip_validation=args.skip_validation,
         )
         return 0 if success else 1
+
+    if args.command == "output":
+        return run_output_command(args, ui, services["runner"])
+
+    if args.command == "policy":
+        return run_policy_command(args, ui, services["runner"])
 
     if args.command in GUIDE_MODULES:
         command_args = build_command_args(args.command, args)
@@ -646,6 +670,10 @@ def run_interactive_app(ui: InfraGuideUI, services: Dict[str, Any]) -> int:
                 port=0,
                 open_browser=True,
             )
+        elif choice == "15":
+            handle_output_menu(ui, services["runner"], services["inspector"])
+        elif choice == "16":
+            handle_policy_menu(ui, services["runner"], services["inspector"])
         elif choice == "0":
             ui.clear_screen()
             ui.show_goodbye()
@@ -1175,6 +1203,82 @@ def handle_theme_menu(
         ui.set_theme(selected)
         ui.show_success(f"Theme changed to {selected}.")
         ui.wait_for_enter()
+
+
+def run_output_command(
+    args: argparse.Namespace, ui: InfraGuideUI, runner: CommandRunner
+) -> int:
+    """Show terraform/tofu output values."""
+    cmd_args: List[str] = []
+    if getattr(args, "output_json", False):
+        cmd_args.append("-json")
+    if getattr(args, "output_raw", False):
+        cmd_args.append("-raw")
+    if getattr(args, "output_name", None):
+        cmd_args.append(args.output_name)
+
+    result = runner.execute_capture("output", cmd_args)
+    ui.show_output_panel(result.get("stdout", ""), runner.format_command("output", cmd_args))
+    if result.get("stderr"):
+        ui.show_error(result["stderr"].strip())
+    return 0 if result["success"] else result["exit_code"]
+
+
+def run_policy_command(
+    args: argparse.Namespace, ui: InfraGuideUI, runner: CommandRunner
+) -> int:
+    """Run policy checks against a plan file."""
+    plan_file = getattr(args, "policy_plan_file", None)
+    return _do_policy_check(ui, runner, plan_file)
+
+
+def handle_output_menu(ui: InfraGuideUI, runner: CommandRunner, inspector: ProjectInspector):
+    """Interactive output viewer."""
+    ui.clear_screen()
+    ui.show_banner(snapshot=inspector.inspect(include_state=False), title="Output Values")
+    ui.show_info("Fetching all declared outputs from the current workspace...")
+    result = runner.execute_capture("output", [])
+    ui.show_output_panel(result.get("stdout", ""), runner.format_command("output", []))
+    if result.get("stderr"):
+        ui.show_error(result["stderr"].strip())
+    ui.wait_for_enter()
+
+
+def handle_policy_menu(ui: InfraGuideUI, runner: CommandRunner, inspector: ProjectInspector):
+    """Interactive policy checker flow."""
+    ui.clear_screen()
+    ui.show_banner(snapshot=inspector.inspect(include_state=False), title="Policy Checker")
+    ui.show_info(
+        "Policy checks validate your plan against built-in security and compliance rules.\n"
+        "  Provide a saved plan file path, or press Enter to skip."
+    )
+    plan_file = Prompt.ask("[cyan]Plan file path (optional)[/cyan]", default="").strip() or None
+    _do_policy_check(ui, runner, plan_file)
+    ui.wait_for_enter()
+
+
+def _do_policy_check(ui: InfraGuideUI, runner: CommandRunner, plan_file: Optional[str]) -> int:
+    """Run policy checks and display results. Returns exit code."""
+    checker = PolicyChecker()
+    if plan_file:
+        result = runner.execute_capture("show", ["-json", plan_file])
+        if not result["success"]:
+            ui.show_error(f"Could not read plan file '{plan_file}': {result.get('stderr', '')}")
+            return 1
+        plan_json = result["stdout"]
+    else:
+        result = runner.execute_capture("show", ["-json"])
+        if not result["success"] or not result["stdout"].strip():
+            ui.show_info(
+                "No plan file given and no current state to inspect. "
+                "Run `infra-guide plan --out tfplan` then `infra-guide policy --plan-file tfplan`."
+            )
+            return 0
+        plan_json = result["stdout"]
+
+    results = checker.check_plan(plan_json)
+    ui.show_policy_panel(results)
+    return 1 if results.get("violations", 0) > 0 else 0
 
 
 def build_command_args(command_name: str, args: argparse.Namespace) -> List[str]:

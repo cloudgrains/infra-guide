@@ -184,7 +184,7 @@ class PreFlightValidator:
         try:
             for filename in os.listdir('.'):
                 if filename.endswith('.tf'):
-                    with open(filename, 'r') as f:
+                    with open(filename, 'r', encoding="utf-8", errors="ignore") as f:
                         content = f.read()
                         if 'backend' in content:
                             has_backend = True

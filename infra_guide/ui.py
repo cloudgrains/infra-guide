@@ -3,6 +3,7 @@ UI components for the infra-guide terminal experience.
 """
 
 import shlex
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from rich import box
@@ -200,12 +201,27 @@ class InfraGuideUI:
 
         self.console.print(Columns([next_step, recent_panel, favorites_panel], expand=True, equal=True))
         self.console.print()
+        tips = [
+            "Tip: run `doctor --with-drift` before every production deploy.",
+            "Tip: save plans with `plan --out tfplan` then `apply --plan-file tfplan` for exact reproducibility.",
+            "Tip: use `workspace` to keep dev, staging, and prod state fully isolated.",
+            "Tip: `fmt` with `--diff` shows exactly what will change before modifying files.",
+            "Tip: `cicd` runs init → validate → plan in a non-interactive pipeline-friendly sequence.",
+            "Tip: open the web command center (`web`) for a browser-based view of the same controls.",
+            "Tip: favorite a command from its preview screen so it appears here for one-click reuse.",
+            "Tip: `policy` checks your plan against built-in security and compliance rules.",
+        ]
+        tip = tips[datetime.now().minute % len(tips)]
         self.console.print(
             Panel(
-                Text(
-                    "Fresh in this product flow: theme switching, command history, favorites, pre-apply cost insight, and a new localhost web command center.",
-                    style=self._muted_style(),
+                Group(
+                    Text(tip, style=self._muted_style()),
+                    Text(
+                        "Use `infra-guide --help` for full CLI reference or select a menu option above.",
+                        style=self._muted_style(),
+                    ),
                 ),
+                title=f"[bold {self._color('surface_alt')}]Quick Tip[/bold {self._color('surface_alt')}]",
                 border_style=self._color("surface_alt"),
                 box=box.ROUNDED,
                 padding=(0, 1),
@@ -246,6 +262,8 @@ class InfraGuideUI:
             ("12", "fmt", "Format Terraform/OpenTofu files", "low"),
             ("13", "cicd", "Run pipeline-friendly init/validate/plan flow", "medium"),
             ("14", "web", "Launch the localhost browser command center", "low"),
+            ("15", "output", "Show infrastructure output values", "low"),
+            ("16", "policy", "Run built-in security policy checks on a plan", "low"),
             ("0", "exit", "Close infra-guide", "low"),
         ]
 
@@ -266,7 +284,7 @@ class InfraGuideUI:
 
         return Prompt.ask(
             f"[bold {self._color('accent')}]Select an option[/bold {self._color('accent')}]",
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "0"],
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "0"],
             default="0",
         )
 
@@ -595,14 +613,28 @@ class InfraGuideUI:
         self.console.print(
             Panel(
                 Align.center(
-                    Text(
-                        "Thanks for using infra-guide.\nShip safe changes.",
-                        style=f"bold {self._color('brand')}",
+                    Group(
+                        Text(
+                            "Thanks for using infra-guide.",
+                            style=f"bold {self._color('brand')}",
+                            justify="center",
+                        ),
+                        Text(
+                            "Ship safe. Ship reviewed. Ship confidently.",
+                            style=self._muted_style(),
+                            justify="center",
+                        ),
+                        Text(""),
+                        Text(
+                            f"v{__version__}  •  github.com/iamtejas23/infra-guide",
+                            style=self._muted_style(),
+                            justify="center",
+                        ),
                     )
                 ),
-                border_style=self._color("surface"),
-                box=box.ROUNDED,
-                padding=(1, 2),
+                border_style=self._color("brand"),
+                box=box.DOUBLE,
+                padding=(1, 4),
             )
         )
         self.console.print()
@@ -628,10 +660,15 @@ class InfraGuideUI:
             table.add_column("Command", style=self._base_style())
             table.add_column("Code", justify="right", width=6)
             for entry in history_entries:
-                timestamp = entry.get("timestamp", "").split("T")[0]
+                when = self._relative_time(entry.get("timestamp", ""))
                 label = entry.get("label", entry.get("command_name", "command"))
-                exit_code = str(entry.get("exit_code", "?"))
-                table.add_row(timestamp, label, exit_code)
+                raw_code = entry.get("exit_code", "?")
+                code_str = (
+                    f"[{self._color('success')}]{raw_code}[/{self._color('success')}]"
+                    if raw_code == 0
+                    else f"[{self._color('danger')}]{raw_code}[/{self._color('danger')}]"
+                )
+                table.add_row(when, label, code_str)
             content = table
 
         return Panel(
@@ -720,6 +757,113 @@ class InfraGuideUI:
 
     def _color(self, token: str) -> str:
         return self.palette.get(token, "white")
+
+    def show_output_panel(self, raw_output: str, command: str):
+        """Display terraform/tofu output in a styled panel."""
+        self.console.print()
+        if not raw_output.strip():
+            self.console.print(
+                Panel(
+                    Text("No outputs declared in this workspace.", style=self._muted_style()),
+                    title=f"[bold {self._color('brand')}]Output[/bold {self._color('brand')}]",
+                    border_style=self._color("surface"),
+                    box=box.ROUNDED,
+                    padding=(1, 2),
+                )
+            )
+        else:
+            from rich.syntax import Syntax
+            syntax = Syntax(raw_output, "hcl", theme="ansi_dark", word_wrap=True)
+            self.console.print(
+                Panel(
+                    syntax,
+                    title=f"[bold {self._color('brand')}]{command}[/bold {self._color('brand')}]",
+                    border_style=self._color("accent"),
+                    box=box.ROUNDED,
+                    padding=(1, 2),
+                )
+            )
+        self.console.print()
+
+    def show_policy_panel(self, results: dict):
+        """Display policy check results using the active theme."""
+        self.console.print()
+        total = results.get("total_checks", 0)
+        passed = results.get("passed", 0)
+        violations = results.get("violations", 0)
+
+        if not results.get("success"):
+            self.show_error(results.get("error", "Policy check failed."))
+            return
+
+        if violations == 0:
+            token, label = "success", "All Policy Checks Passed"
+        else:
+            token, label = "warning", f"{violations} Policy Violation(s) Detected"
+
+        self.console.print(
+            Panel(
+                Group(
+                    Text(label, style=f"bold {self._color(token)}"),
+                    Text(f"Passed {passed}/{total} checks.", style=self._base_style()),
+                ),
+                title=f"[bold {self._color('brand')}]Policy Report[/bold {self._color('brand')}]",
+                border_style=self._color(token),
+                box=box.ROUNDED,
+                padding=(1, 2),
+            )
+        )
+        self.console.print()
+
+        if violations > 0:
+            sev_colors = {"critical": "danger", "high": "danger", "medium": "warning", "low": "info"}
+            table = Table(
+                show_header=True,
+                header_style=f"bold {self._color('accent')}",
+                box=box.SIMPLE_HEAVY,
+                style=self._base_style(),
+            )
+            table.add_column("Severity", width=10)
+            table.add_column("Policy", style=f"bold {self._color('accent_alt')}", width=30)
+            table.add_column("Resource", style=self._base_style())
+
+            for v in results.get("violation_details", [])[:15]:
+                sev = v["severity"]
+                color = self._color(sev_colors.get(sev, "info"))
+                table.add_row(
+                    f"[bold {color}]{sev.upper()}[/bold {color}]",
+                    v["policy_name"],
+                    v["resource"],
+                )
+
+            self.console.print(
+                Panel(
+                    table,
+                    title=f"[bold {self._color('danger')}]Violations[/bold {self._color('danger')}]",
+                    border_style=self._color("danger"),
+                    box=box.ROUNDED,
+                )
+            )
+            self.console.print()
+
+    def _relative_time(self, timestamp: str) -> str:
+        """Convert ISO timestamp to a human-readable relative time string."""
+        if not timestamp:
+            return "—"
+        try:
+            dt = datetime.fromisoformat(timestamp)
+            now = datetime.now(timezone.utc).astimezone()
+            diff = now - dt
+            seconds = int(diff.total_seconds())
+            if seconds < 60:
+                return "just now"
+            if seconds < 3600:
+                return f"{seconds // 60}m ago"
+            if seconds < 86400:
+                return f"{seconds // 3600}h ago"
+            return f"{seconds // 86400}d ago"
+        except Exception:
+            return timestamp.split("T")[0] if "T" in timestamp else timestamp
 
     def _logo_width(self) -> int:
         if self.console.size.width >= 130:

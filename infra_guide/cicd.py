@@ -125,7 +125,8 @@ class CICDRunner:
         fmt_result = subprocess.run(
             [self.tool_name, 'fmt', '-check', '-recursive'],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=30,
         )
         
         if fmt_result.returncode == 0:

@@ -23,7 +23,6 @@ HIGH_IMPACT_PREFIXES = (
     "aws_lb",
     "aws_autoscaling_",
     "aws_ecs_",
-    "aws_eks_",
     "aws_msk_",
 )
 MEDIUM_IMPACT_PREFIXES = (
