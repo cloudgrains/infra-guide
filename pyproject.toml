@@ -47,6 +47,7 @@ keywords = ["terraform", "opentofu", "infrastructure", "iac", "devops", "cli", "
 dependencies = [
     "rich>=13.0.0",
     "Pillow>=10.0.0",
+    "packaging>=24.0",
 ]
 
 [project.optional-dependencies]
