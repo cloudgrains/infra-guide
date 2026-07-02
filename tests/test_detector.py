@@ -1,6 +1,5 @@
 """Tests for ToolDetector."""
 
-import pytest
 from infra_guide.detector import ToolDetector
 
 

@@ -1,7 +1,6 @@
 """Tests for StateExplorer."""
 
 import json
-import pytest
 from infra_guide.state_explorer import StateExplorer
 
 

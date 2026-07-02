@@ -1,6 +1,5 @@
 """Tests for ProjectInspector."""
 
-import pytest
 from infra_guide.project_inspector import ProjectInspector
 
 

@@ -1,7 +1,6 @@
 """Tests for UpdateChecker."""
 
 import json
-import pytest
 from infra_guide.update_checker import UpdateChecker, _version_is_newer
 
 

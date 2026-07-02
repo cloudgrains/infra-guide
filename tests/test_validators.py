@@ -1,6 +1,5 @@
 """Tests for PreFlightValidator."""
 
-import pytest
 from infra_guide.validators import PreFlightValidator
 
 

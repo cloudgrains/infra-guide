@@ -1,6 +1,5 @@
 """Tests for CommandRunner."""
 
-import pytest
 from infra_guide.runner import CommandRunner
 
 

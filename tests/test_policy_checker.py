@@ -1,7 +1,6 @@
 """Tests for PolicyChecker."""
 
 import json
-import pytest
 from infra_guide.policy_checker import PolicyChecker
 
 
