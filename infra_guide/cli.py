@@ -95,6 +95,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="version",
         version=f"%(prog)s {__version__}",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit machine-readable JSON for status and doctor commands",
+    )
 
     subparsers = parser.add_subparsers(dest="command")
 
@@ -489,13 +494,26 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[str, Any]) -> int:
     """Dispatch direct CLI commands."""
+    json_mode = getattr(args, "json", False)
+
     if args.command == "status":
         snapshot = services["inspector"].inspect(include_state=False)
+        if json_mode:
+            import json as _json
+
+            print(_json.dumps(snapshot, indent=2, default=str))
+            return 0
         ui.show_banner(snapshot=snapshot, title="Status")
         ui.show_project_status(snapshot)
         return 0
 
     if args.command == "doctor":
+        if json_mode:
+            results = services["validator"].run_all_checks()
+            import json as _json
+
+            print(_json.dumps(results, indent=2, default=str))
+            return 1 if results["failed"] > 0 else 0
         return run_doctor(
             ui,
             services["inspector"],
