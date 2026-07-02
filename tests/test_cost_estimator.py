@@ -45,3 +45,37 @@ def test_estimate_apply_cost_from_aws_plan_returns_warning(monkeypatch):
     assert result["status"] == "warning"
     assert result["impact"] == "high"
     assert result["exact_estimate_available"] is False
+
+
+def test_estimate_apply_cost_low_impact_resources(monkeypatch):
+    estimator = CostEstimator("tofu")
+
+    monkeypatch.setattr(
+        estimator,
+        "_load_plan_json",
+        lambda path: {
+            "resource_changes": [
+                {
+                    "provider_name": "registry.terraform.io/hashicorp/aws",
+                    "type": "aws_iam_role",
+                    "change": {"actions": ["create"]},
+                },
+            ]
+        },
+    )
+    monkeypatch.setattr(estimator, "_extract_plan_file", lambda args: "tfplan")
+    result = estimator.estimate_apply_cost(["tfplan"])
+    assert result["impact"] in ("low", "medium", "unknown")
+
+
+def test_estimate_apply_cost_no_resources(monkeypatch):
+    estimator = CostEstimator("tofu")
+
+    monkeypatch.setattr(
+        estimator,
+        "_load_plan_json",
+        lambda path: {"resource_changes": []},
+    )
+    monkeypatch.setattr(estimator, "_extract_plan_file", lambda args: "tfplan")
+    result = estimator.estimate_apply_cost(["tfplan"])
+    assert result["exact_estimate_available"] is False

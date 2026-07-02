@@ -107,3 +107,46 @@ def test_execute_capture_includes_command_preview(monkeypatch):
     result = runner.execute_capture("fmt", ["-check"])
     assert "tofu" in result["command"]
     assert "fmt" in result["command"]
+
+
+# ── execute_with_flags ────────────────────────────────────────────────────────
+
+
+def test_execute_with_flags_boolean_true(monkeypatch):
+    captured = {}
+
+    def _fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        return _FakeProc(0)
+
+    monkeypatch.setattr("infra_guide.runner.subprocess.run", _fake_run)
+    runner = CommandRunner("tofu")
+    runner.execute_with_flags("init", {"-upgrade": True})
+    assert "-upgrade" in captured["cmd"]
+
+
+def test_execute_with_flags_value_flag(monkeypatch):
+    captured = {}
+
+    def _fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        return _FakeProc(0)
+
+    monkeypatch.setattr("infra_guide.runner.subprocess.run", _fake_run)
+    runner = CommandRunner("tofu")
+    runner.execute_with_flags("plan", {"-out": "myplan"})
+    assert "-out" in captured["cmd"]
+    assert "myplan" in captured["cmd"]
+
+
+def test_execute_with_flags_false_flag_skipped(monkeypatch):
+    captured = {}
+
+    def _fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        return _FakeProc(0)
+
+    monkeypatch.setattr("infra_guide.runner.subprocess.run", _fake_run)
+    runner = CommandRunner("tofu")
+    runner.execute_with_flags("fmt", {"-check": False})
+    assert "-check" not in captured["cmd"]
