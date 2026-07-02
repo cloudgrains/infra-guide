@@ -9,6 +9,10 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.9.0] — 2026-07-02
+
 ### Added
 - `completion` subcommand — outputs shell completion scripts for bash, zsh, and fish
 - Background PyPI update checker with 24-hour XDG-cache TTL; shows upgrade banner after each CLI command when a newer version is available

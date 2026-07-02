@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "infra-guide"
-version = "0.8.0"
+version = "0.9.0"
 description = "An interactive TUI for Terraform and OpenTofu beginners with enterprise-grade features"
 readme = "README.md"
 authors = [
@@ -63,7 +63,7 @@ Homepage = "https://github.com/iamtejas23/infra-guide"
 Documentation = "https://github.com/iamtejas23/infra-guide#readme"
 Repository = "https://github.com/iamtejas23/infra-guide"
 "Bug Tracker" = "https://github.com/iamtejas23/infra-guide/issues"
-Changelog = "https://github.com/iamtejas23/infra-guide/releases"
+Changelog = "https://github.com/iamtejas23/infra-guide/blob/main/CHANGELOG.md"
 
 [project.scripts]
 infra-guide = "infra_guide.cli:main"
