@@ -42,6 +42,9 @@ jobs:
       - name: Import smoke-test
         run: python -c "from infra_guide.cli import build_parser; build_parser()"
 
+      - name: Run tests
+        run: python -m pytest --tb=short -q
+
   # ── 2. Build & publish ────────────────────────────────────────────────────
   build-and-publish:
     name: Build and publish

@@ -11,6 +11,8 @@ from rich.prompt import Confirm, Prompt
 
 from infra_guide import __version__
 from infra_guide.cicd import CICDRunner
+from infra_guide.completion import get_completion_script
+from infra_guide.update_checker import UpdateChecker
 from infra_guide.cost_estimator import CostEstimator
 from infra_guide.detector import ToolDetector
 from infra_guide.drift_detector import DriftDetector
@@ -269,6 +271,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="saved plan file to analyse (JSON format required)",
     )
 
+    completion_parser = subparsers.add_parser(
+        "completion",
+        help="output shell completion script for bash, zsh, or fish",
+    )
+    completion_parser.add_argument(
+        "shell",
+        choices=["bash", "zsh", "fish"],
+        help="target shell",
+    )
+
     init_parser = subparsers.add_parser("init", help="initialize a working directory")
     init_parser.add_argument("--upgrade", action="store_true", help="upgrade providers and modules")
     init_parser.add_argument(
@@ -435,6 +447,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         args.theme or getattr(args, "set_theme_name", None) or preferences.get_theme_name()
     )
 
+    update_checker = UpdateChecker(__version__)
+    update_checker.start()
+
     tool = args.tool or ToolDetector.detect()
     if tool is None:
         temp_ui = InfraGuideUI("none", "none", no_color=args.no_color, theme_name=chosen_theme)
@@ -463,7 +478,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         ui.set_logo_visibility(True)
         return run_interactive_app(ui, services)
 
-    return dispatch_command(args, ui, services)
+    exit_code = dispatch_command(args, ui, services)
+
+    notification = update_checker.get_notification()
+    if notification and not args.no_color:
+        ui.console.print(notification)
+
+    return exit_code
 
 
 def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[str, Any]) -> int:
@@ -543,6 +564,10 @@ def dispatch_command(args: argparse.Namespace, ui: InfraGuideUI, services: Dict[
 
     if args.command == "policy":
         return run_policy_command(args, ui, services["runner"])
+
+    if args.command == "completion":
+        print(get_completion_script(args.shell), end="")
+        return 0
 
     if args.command in GUIDE_MODULES:
         command_args = build_command_args(args.command, args)

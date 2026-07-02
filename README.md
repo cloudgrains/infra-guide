@@ -4,178 +4,161 @@
   <img src="https://raw.githubusercontent.com/iamtejas23/infra-guide/main/img/infra-guide.png" alt="infra-guide logo" width="360">
 </p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/iamtejas23/infra-guide)
+<p align="center">
+  <a href="https://pypi.org/project/infra-guide/"><img src="https://img.shields.io/pypi/v/infra-guide?color=blue&label=PyPI" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/infra-guide/"><img src="https://img.shields.io/pypi/dm/infra-guide?color=blue&label=downloads" alt="PyPI downloads"></a>
+  <a href="https://github.com/iamtejas23/infra-guide/actions/workflows/publish.yml"><img src="https://github.com/iamtejas23/infra-guide/actions/workflows/publish.yml/badge.svg" alt="CI"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+"></a>
+</p>
 
-`infra-guide` is a product-style CLI and interactive command center for Terraform and OpenTofu. It blends guide-first workflows, direct subcommands, workspace diagnostics, and automation-friendly commands so the tool works for both learning and day-to-day operations.
+A product-grade CLI and interactive command center for Terraform and OpenTofu. Blends guide-first workflows, direct subcommands, workspace diagnostics, policy checks, and automation-friendly commands — so the tool works equally well for learning and day-to-day operations.
 
 ## Features
 
-- Real CLI surface with working `--help`, subcommands, and passthrough args
-- Interactive themed dashboard with readiness, backend, lock file, workspace, state, recent commands, and favorites
-- Local web command center with a browser dashboard on `localhost` for teams who want TUI workflows in a cleaner UI
-- `doctor` mode for project health checks and actionable recommendations
-- Persistent theme customization with `aurora`, `sunset`, `forest`, and `mono`
-- Command history and favorites with rerun support inside the TUI
-- Pre-apply cost insight that analyzes a saved plan when available and clearly says when exact pricing cannot be predicted safely
-- Guide mode for `init`, `plan`, `apply`, and `destroy`
-- Direct support for `history`, `theme`, `init`, `plan`, `apply`, `destroy`, `fmt`, `state`, `workspace`, and `cicd`
-- Drift detection, validation, state exploration, and workspace management
-- Local-only execution with no telemetry and no cloud credentials required
-
-## Demo
-
-```text
-infra-guide  Command Center  v0.6.0
-Tool: tofu (OpenTofu v1.11.5)
-Workspace: default
-Directory: ./envs/dev
-
-Environment      Project Signals     Next Step
-Workspace: dev   Config files: 8     Ready to operate
-Readiness: READY Backend: YES        Recommended flow:
-                 Lock file: YES      doctor -> plan -> apply
-
-Command Palette
-1  doctor     Workspace health check with guidance   LOW
-2  init       Initialize providers and backend       LOW
-3  plan       Preview infrastructure changes         LOW
-4  apply      Apply changes with cost insight        MEDIUM
-5  destroy    Remove managed infrastructure          HIGH
-10 history    Rerun recent or favorite commands      LOW
-11 theme      Switch the interface theme             LOW
-```
+- **Interactive TUI dashboard** — themed readiness panel, workspace info, recent commands, and favorites
+- **Direct CLI subcommands** — `init`, `plan`, `apply`, `destroy`, `fmt`, `state`, `workspace`, `cicd`, `output`, `policy`, and more
+- **Doctor mode** — workspace health checks with actionable recommendations and optional drift detection
+- **Policy checks** — built-in security policy engine (no-public-S3, open security groups, missing tags, encryption, versioning)
+- **Web command center** — launch a local browser UI (`infra-guide web`) powered by the same backend as the TUI
+- **Themes** — `aurora` (default), `sunset`, `forest`, `mono`, `neon` — persisted across sessions
+- **Shell completion** — one-line setup for bash, zsh, and fish
+- **Update notifications** — background PyPI check after each command, cached for 24 h
+- **Cost insight** — analyzes saved plan JSON for AWS cost-impact hints before `apply`
+- **Command history and favorites** — rerun support inside the TUI
+- **Local-only** — no telemetry, no credential handling, no cloud calls beyond what your IaC tool makes
 
 ## Installation
 
-### pipx
-
 ```bash
+pip install infra-guide
+# or
 pipx install infra-guide
-infra-guide --help
 ```
 
-### From source
+## Quick start
 
 ```bash
-git clone https://github.com/iamtejas23/infra-guide.git
-cd infra-guide
-python3 -m venv venv
-source venv/bin/activate
-pip install .
+# interactive mode
 infra-guide
-```
 
-## Usage
-
-### Interactive mode
-
-```bash
-infra-guide
-```
-
-### Direct CLI mode
-
-```bash
-infra-guide status
-infra-guide doctor --with-drift
-infra-guide history --favorites
-infra-guide theme --set sunset
-infra-guide web
-infra-guide guide plan
-infra-guide init --upgrade
+# direct CLI
+infra-guide doctor
 infra-guide plan --out tfplan
 infra-guide apply --plan-file tfplan --yes
-infra-guide workspace --select staging
-infra-guide fmt --check
 ```
 
-### Passing through raw flags
+## Shell completion
 
 ```bash
-infra-guide plan -- --target=module.network
-infra-guide init -- --backend-config=env/dev.backend.hcl
-infra-guide destroy -- --target=aws_instance.temporary
+# bash — add to ~/.bashrc
+eval "$(infra-guide completion bash)"
+
+# zsh — add to ~/.zshrc
+eval "$(infra-guide completion zsh)"
+
+# fish — add to ~/.config/fish/config.fish
+infra-guide completion fish | source
 ```
-
-## Suggested workflow
-
-1. Run `infra-guide doctor` to understand workspace readiness.
-2. Run `infra-guide init` if the directory has not been initialized.
-3. Run `infra-guide plan --out tfplan` to preview and save changes.
-4. Run `infra-guide apply --plan-file tfplan --yes` when ready to execute.
 
 ## Commands
 
 | Command | Description | Risk |
 | --- | --- | --- |
-| `status` | Show a fast workspace summary | Low |
-| `doctor` | Run health diagnostics and recommendations | Low |
-| `guide <command>` | Show best practices and examples for a command | Low |
-| `history` | Show recent commands and favorites | Low |
-| `theme` | Show or change the active TUI theme | Low |
-| `web` | Launch the local browser command center on localhost | Low |
-| `init` | Initialize providers, modules, and backend | Low |
-| `plan` | Preview infrastructure changes | Low |
-| `apply` | Create or update infrastructure | Medium |
-| `destroy` | Delete managed infrastructure | High |
-| `validate` | Run pre-flight checks | Low |
+| `status` | Fast workspace summary | Low |
+| `doctor [--with-drift]` | Health diagnostics and recommendations | Low |
+| `guide <command>` | Best practices for init, plan, apply, destroy | Low |
+| `history [--favorites] [--clear]` | Recent commands and favorites | Low |
+| `theme [--list] [--set NAME]` | Show or change the active theme | Low |
+| `web [--port N] [--no-browser]` | Launch local browser command center | Low |
+| `validate` | Pre-flight validation checks | Low |
 | `drift` | Detect infrastructure drift | Low |
-| `state` | Show state overview, list, tree, or resource detail | Low |
-| `workspace` | List, create, select, or delete workspaces | Medium |
-| `fmt` | Format Terraform/OpenTofu files | Low |
-| `cicd` | Run a pipeline-friendly init/validate/plan flow | Medium |
+| `state [--list\|--tree\|--detail ADDR]` | Explore state resources | Low |
+| `output [NAME] [--json\|--raw]` | Show infrastructure output values | Low |
+| `policy [--plan-file PATH]` | Check plan against built-in security policies | Low |
+| `init [--upgrade] [--reconfigure]` | Initialize providers, modules, backend | Low |
+| `plan [--out PATH] [--detailed-exitcode]` | Preview changes | Low |
+| `apply [--plan-file PATH] [--yes]` | Apply changes with cost insight | Medium |
+| `destroy [--yes]` | Delete managed infrastructure | High |
+| `workspace [--list\|--select\|--create\|--delete]` | Manage workspaces | Medium |
+| `fmt [--check] [--diff]` | Format HCL files | Low |
+| `cicd [--skip-init] [--skip-validation]` | Pipeline-friendly init/validate/plan flow | Medium |
+| `completion <bash\|zsh\|fish>` | Output shell completion script | Low |
 
-## Feature notes
+## Usage examples
 
 ### Doctor and status
 
 ```bash
-infra-guide status
-infra-guide doctor
-infra-guide doctor --with-drift
+infra-guide status                # fast workspace panel
+infra-guide doctor                # full health check
+infra-guide doctor --with-drift   # health check + drift detection
 ```
 
-`status` is lightweight. `doctor` adds validation and exits non-zero when critical checks fail.
-
-### Themes, history, and favorites
-
-```bash
-infra-guide theme --list
-infra-guide theme --set forest
-infra-guide history
-infra-guide history --favorites
-```
-
-The TUI also exposes theme switching, favorite toggling, and rerun flows directly from the interactive dashboard.
-
-### Web command center
-
-```bash
-infra-guide web
-infra-guide web --port 9000
-infra-guide web --no-browser
-```
-
-`infra-guide web` launches a local browser UI on `localhost` and reuses the same project inspector, history, favorites, theme customization, cost hints, workspace actions, and state explorer data as the TUI.
-
-### Apply cost insight
+### Plan, apply, and destroy
 
 ```bash
 infra-guide plan --out tfplan
 infra-guide apply --plan-file tfplan --yes
+infra-guide destroy --yes
+
+# pass raw flags through to the IaC tool after --
+infra-guide plan -- --target=module.network
+infra-guide init -- --backend-config=env/dev.backend.hcl
 ```
 
-Before `apply`, infra-guide now shows a cost-impact panel. It uses the saved plan when possible, but it intentionally avoids claiming exact AWS pricing unless live pricing context exists.
-
-### State explorer
+### Policy as code
 
 ```bash
-infra-guide state
-infra-guide state --list
-infra-guide state --tree
+# check the current directory against built-in security policies
+infra-guide policy
+
+# check a saved plan JSON
+infra-guide plan --out tfplan.json
+infra-guide policy --plan-file tfplan.json
+```
+
+Policies included out of the box:
+
+| ID | Description | Severity |
+| --- | --- | --- |
+| `no-public-s3` | S3 buckets must not have a public ACL | High |
+| `no-public-ingress` | Security groups must not allow 0.0.0.0/0 ingress | Critical |
+| `require-tags` | Resources must have `Environment` and `Owner` tags | Medium |
+| `require-encryption` | AWS resources should have encryption enabled | High |
+| `require-versioning` | S3 buckets should have versioning enabled | Medium |
+| `no-default-vpc` | Resources should not reference the default VPC | Low |
+
+### Themes
+
+```bash
+infra-guide theme --list
+infra-guide theme --set neon      # aurora | sunset | forest | mono | neon
+```
+
+### Output values
+
+```bash
+infra-guide output                 # all outputs
+infra-guide output bucket_name     # single output
+infra-guide output --json          # raw JSON
+```
+
+### State exploration
+
+```bash
+infra-guide state                  # overview
+infra-guide state --list           # flat list
+infra-guide state --tree           # grouped tree view
 infra-guide state --detail aws_instance.web
+```
+
+### Web command center
+
+```bash
+infra-guide web               # opens http://localhost:8765
+infra-guide web --port 9000
+infra-guide web --no-browser  # server only
 ```
 
 ### Workspace management
@@ -195,12 +178,21 @@ infra-guide cicd --skip-init
 infra-guide cicd --skip-validation
 ```
 
+## Suggested workflow
+
+```bash
+infra-guide doctor               # 1. understand workspace health
+infra-guide init                 # 2. initialize if needed
+infra-guide plan --out tfplan    # 3. preview and save
+infra-guide policy               # 4. check against security policies
+infra-guide apply --plan-file tfplan --yes  # 5. apply
+```
+
 ## Security and privacy
 
 - No telemetry
-- No network calls beyond your Terraform/OpenTofu usage
 - No credential handling inside infra-guide
-- Local execution only
+- Network calls: only the background PyPI version check (cached 24 h, skipped on `--no-color`)
 - Open source and auditable
 
 ## Development
@@ -208,12 +200,11 @@ infra-guide cicd --skip-validation
 ```bash
 git clone https://github.com/iamtejas23/infra-guide.git
 cd infra-guide
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate
 pip install -e ".[dev]"
 pytest
 black infra_guide/
-mypy infra_guide/
+flake8 infra_guide/ --max-line-length=100
 ```
 
 ## Project structure
@@ -221,16 +212,28 @@ mypy infra_guide/
 ```text
 infra-guide/
 ├── infra_guide/
-│   ├── cli.py
-│   ├── project_inspector.py
-│   ├── runner.py
-│   ├── ui.py
-│   ├── validators.py
-│   ├── drift_detector.py
-│   ├── state_explorer.py
-│   ├── workspace_manager.py
-│   ├── cicd.py
-│   └── guides/
+│   ├── cli.py               # entry point and argument parser
+│   ├── ui.py                # Rich-based TUI
+│   ├── runner.py            # subprocess wrapper
+│   ├── detector.py          # tool detection (tofu / terraform)
+│   ├── project_inspector.py # workspace metadata
+│   ├── validators.py        # pre-flight checks
+│   ├── drift_detector.py    # drift detection
+│   ├── state_explorer.py    # state file browser
+│   ├── workspace_manager.py # workspace CRUD
+│   ├── policy_checker.py    # built-in policy engine
+│   ├── cost_estimator.py    # plan cost analysis
+│   ├── cicd.py              # CI/CD pipeline runner
+│   ├── completion.py        # shell completion scripts
+│   ├── update_checker.py    # background PyPI version check
+│   ├── preferences.py       # theme and history persistence
+│   ├── web.py               # browser command center
+│   └── guides/              # command guide modules
+├── tests/
 ├── pyproject.toml
 └── README.md
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
